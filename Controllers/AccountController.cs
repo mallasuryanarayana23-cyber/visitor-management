@@ -1,3 +1,4 @@
+using System;
 using System.Web.Mvc;
 using System.Web.Security;
 using VMS.Models;
@@ -12,9 +13,18 @@ namespace VMS.Controllers
         [HttpGet]
         public ActionResult Login()
         {
+            // FIX: If AuthCookie exists but Session is missing, it causes an infinite redirect loop.
             if (User.Identity.IsAuthenticated)
             {
-                return RedirectBasedOnRole();
+                if (Session["Role"] != null)
+                {
+                    return RedirectBasedOnRole();
+                }
+                else
+                {
+                    // Session was reset. Sign off the stale cookie.
+                    FormsAuthentication.SignOut();
+                }
             }
             return View();
         }
@@ -25,34 +35,46 @@ namespace VMS.Controllers
         {
             if (ModelState.IsValid)
             {
-                UserModel user = _userDal.AuthenticateUser(model.Username, model.Password);
-
-                if (user != null)
+                try 
                 {
-                    // Forms Auth
-                    FormsAuthentication.SetAuthCookie(user.Username, false);
+                    UserModel user = _userDal.AuthenticateUser(model.Username, model.Password);
 
-                    // Session
-                    Session["UserID"] = user.UserID;
-                    Session["UserName"] = user.FullName;
-                    Session["Role"] = user.Role;
+                    if (user != null)
+                    {
+                        // Forms Auth
+                        FormsAuthentication.SetAuthCookie(user.Username, false);
 
-                    _userDal.LogAudit(user.UserID, "Login", "VMS_USERS", user.UserID, Request.UserHostAddress, "Successful login");
+                        // Session
+                        Session["UserID"] = user.UserID;
+                        Session["UserName"] = user.FullName;
+                        Session["Role"] = user.Role;
 
-                    return RedirectBasedOnRole();
+                        _userDal.LogAudit(user.UserID, "Login", "VMS_USERS", user.UserID, Request.UserHostAddress, "Successful login");
+
+                        return RedirectBasedOnRole();
+                    }
+                    
+                    ModelState.AddModelError("", "Invalid Username or Password. Please check your credentials.");
                 }
-                
-                ModelState.AddModelError("", "Invalid Username or Password");
+                catch (Exception ex)
+                {
+                    // FIX: Catch Database disconnections instead of crashing the app
+                    ModelState.AddModelError("", "Database Connection Error: Cannot verify credentials. Please ensure the Oracle DB is running and connected.");
+                }
             }
             return View(model);
         }
 
         public ActionResult Logout()
         {
-            if (Session["UserID"] != null)
+            try
             {
-                _userDal.LogAudit((int)Session["UserID"], "Logout", "VMS_USERS", (int)Session["UserID"], Request.UserHostAddress, "User logged out");
+                if (Session["UserID"] != null)
+                {
+                    _userDal.LogAudit((int)Session["UserID"], "Logout", "VMS_USERS", (int)Session["UserID"], Request.UserHostAddress, "User logged out");
+                }
             }
+            catch { /* Ignore logging failures during logout */ }
 
             FormsAuthentication.SignOut();
             Session.Clear();
@@ -68,7 +90,11 @@ namespace VMS.Controllers
 
         private ActionResult RedirectBasedOnRole()
         {
-            if (Session["Role"] == null) return RedirectToAction("Login");
+            if (Session["Role"] == null) 
+            {
+                FormsAuthentication.SignOut();
+                return RedirectToAction("Login");
+            }
 
             string role = Session["Role"].ToString();
             if (role == "ADMIN")

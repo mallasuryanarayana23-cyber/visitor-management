@@ -296,3 +296,17 @@ BEGIN
     END IF;
 END SP_SET_GUARD_PASSWORD;
 /
+
+-- --------------------------------------------------------
+-- 6. SEED DATA
+-- --------------------------------------------------------
+-- Create a default admin user. Password is 'admin123'
+-- Hash computed using SHA-256 for 'admin123' is:
+-- 240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9
+INSERT INTO VMS_USERS (USER_ID, USERNAME, PASSWORD_HASH, FULL_NAME, ROLE, IS_ACTIVE)
+SELECT 1, 'ADMIN_01', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'System Administrator', 'ADMIN', 1 
+FROM DUAL 
+WHERE NOT EXISTS (SELECT 1 FROM VMS_USERS WHERE USERNAME = 'ADMIN_01');
+
+COMMIT;
+
