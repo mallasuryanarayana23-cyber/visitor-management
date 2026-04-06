@@ -241,7 +241,7 @@
 
                 if (!empId) { $('#userEmpId').addClass('is-invalid'); valid = false; } else { $('#userEmpId').removeClass('is-invalid'); }
                 if (!name)  { $('#userName').addClass('is-invalid');  valid = false; } else { $('#userName').removeClass('is-invalid'); }
-                if (!email || !/\S+@\S+\.\S+/.test(email)) { $('#userEmail').addClass('is-invalid'); valid = false; } else { $('#userEmail').removeClass('is-invalid'); }
+                if (!email || !/\S+@@\S+\.\S+/.test(email)) { $('#userEmail').addClass('is-invalid'); valid = false; } else { $('#userEmail').removeClass('is-invalid'); }
                 if (!role)  { $('#userRole').addClass('is-invalid');  valid = false; } else { $('#userRole').removeClass('is-invalid'); }
                 if (!isEdit && (!pass || pass.length < 8)) { $('#userPassword').addClass('is-invalid'); valid = false; } else { $('#userPassword').removeClass('is-invalid'); }
 

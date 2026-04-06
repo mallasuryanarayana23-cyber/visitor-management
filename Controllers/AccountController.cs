@@ -16,7 +16,7 @@ namespace VMS.Controllers
         private UserDAL _userDal = new UserDAL();
 
         [HttpGet]
-        public IIActionResult Login()
+        public IActionResult Login()
         {
             if (User.Identity.IsAuthenticated)
             {
@@ -34,7 +34,7 @@ namespace VMS.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IIActionResult> Login(LoginViewModel model)
+        public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (ModelState.IsValid)
             {
@@ -78,7 +78,7 @@ namespace VMS.Controllers
             return View(model);
         }
 
-        public async Task<IIActionResult> Logout()
+        public async Task<IActionResult> Logout()
         {
             int? userId = HttpContext.Session.GetInt32("UserID");
             if (userId.HasValue)
@@ -92,12 +92,12 @@ namespace VMS.Controllers
         }
 
         [HttpGet]
-        public IIActionResult Unauthorized()
+        public IActionResult Unauthorized()
         {
             return View();
         }
 
-        private IIActionResult RedirectBasedOnRole()
+        private IActionResult RedirectBasedOnRole()
         {
             var role = HttpContext.Session.GetString("Role");
             if (string.IsNullOrEmpty(role)) 
