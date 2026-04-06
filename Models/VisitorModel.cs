@@ -53,9 +53,9 @@ namespace VMS.Models
 
         // For uploads in Registration
         [Required(ErrorMessage = "Photo is required")]
-        public HttpPostedFileBase PhotoUpload { get; set; }
+        public IFormFile PhotoUpload { get; set; }
 
         [Required(ErrorMessage = "ID Proof document is required")]
-        public HttpPostedFileBase IDProofUpload { get; set; }
+        public IFormFile IDProofUpload { get; set; }
     }
 }

@@ -39,7 +39,7 @@ namespace VMS.Controllers
         {
             try
             {
-                int guardId = (int)HttpContext.Session.GetString("UserID"];
+                int guardId = HttpContext.Session.GetInt32("UserID") ?? 0;
                 _visitorDal.CheckInVisitor(visitorId, gateId, guardId);
                 _userDal.LogAudit(guardId, "Check-In", "VMS_VISITORS", visitorId, HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown", $"Gate check-in at gate {gateId}");
                 return Json(new { success = true });
@@ -55,7 +55,7 @@ namespace VMS.Controllers
         {
              try
             {
-                int guardId = (int)HttpContext.Session.GetString("UserID"];
+                int guardId = HttpContext.Session.GetInt32("UserID") ?? 0;
                 _visitorDal.CheckOutVisitor(visitorId);
                 _userDal.LogAudit(guardId, "Check-Out", "VMS_VISITORS", visitorId, HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown", $"Gate check-out");
                 return Json(new { success = true });

@@ -9,9 +9,9 @@ namespace VMS.Helpers
 {
     public static class FileUploadHelper
     {
-        public static FileUploadModel UploadFile(HttpPostedFileBase file, int visitorId, string uploadType)
+        public static FileUploadModel UploadFile(IFormFile file, int visitorId, string uploadType)
         {
-            if (file == null || file.ContentLength == 0)
+            if (file == null || file.Length == 0)
                 throw new Exception("No file selected for upload.");
 
             // Get configurations
@@ -23,7 +23,7 @@ namespace VMS.Helpers
                 Convert.ToInt32(ConfigurationManager.AppSettings["MaxPhotoSizeMB"]) : 
                 Convert.ToInt32(ConfigurationManager.AppSettings["MaxDocSizeMB"]);
                 
-            if (file.ContentLength > (maxSizeMB * 1024 * 1024))
+            if (file.Length > (maxSizeMB * 1024 * 1024))
                 throw new Exception($"{uploadType} must not exceed {maxSizeMB} MB.");
 
             // Validate Extensions
@@ -55,7 +55,10 @@ namespace VMS.Helpers
             }
 
             // Save the physical file using System.IO to the UNC path
-            file.SaveAs(targetFilePath);
+            using (var stream = new FileStream(targetFilePath, FileMode.Create))
+            {
+                file.CopyTo(stream);
+            }
 
             // Return the model structure needed for DB
             return new FileUploadModel
@@ -66,7 +69,7 @@ namespace VMS.Helpers
                 StoredName = newFileName,
                 FilePath = targetFilePath,
                 FileUrl = fileUrl,
-                FileSizeBytes = file.ContentLength,
+                FileSizeBytes = file.Length,
                 MimeType = file.ContentType,
                 UploadedDate = DateTime.Now
             };

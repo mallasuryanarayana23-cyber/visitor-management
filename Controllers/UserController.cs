@@ -29,7 +29,7 @@ namespace VMS.Controllers
                 try
                 {
                     // 1. Register Visitor in DB
-                    int loggedInUser = (int)HttpContext.Session.GetString("UserID"];
+                    int loggedInUser = HttpContext.Session.GetInt32("UserID") ?? 0;
                     model.RegisteredBy = loggedInUser;
                     
                     int newVisitorId;
@@ -38,14 +38,14 @@ namespace VMS.Controllers
                     _visitorDal.RegisterVisitor(model, out newVisitorId, out newToken);
 
                     // 2. Upload Photo
-                    if (model.PhotoUpload != null && model.PhotoUpload.ContentLength > 0)
+                    if (model.PhotoUpload != null && model.PhotoUpload.Length > 0)
                     {
                         var photoData = FileUploadHelper.UploadFile(model.PhotoUpload, newVisitorId, "Photo");
                         _fileUploadDal.SaveFileUploadRecord(photoData);
                     }
 
                     // 3. Upload ID Proof
-                    if (model.IDProofUpload != null && model.IDProofUpload.ContentLength > 0)
+                    if (model.IDProofUpload != null && model.IDProofUpload.Length > 0)
                     {
                         var docData = FileUploadHelper.UploadFile(model.IDProofUpload, newVisitorId, "IDProof");
                         _fileUploadDal.SaveFileUploadRecord(docData);
