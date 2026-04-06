@@ -1,77 +1,84 @@
 using System;
 using System.IO;
-using Microsoft.AspNetCore.Http;
-using System.Configuration;
-using VMS.Models;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using VMS.Models;
 
 namespace VMS.Helpers
 {
     public static class FileUploadHelper
     {
+        // Single shared HttpClient (best practice)
+        private static readonly HttpClient _httpClient = new HttpClient();
+
         public static FileUploadModel UploadFile(IFormFile file, int visitorId, string uploadType)
         {
             if (file == null || file.Length == 0)
                 throw new Exception("No file selected for upload.");
 
-            // Get configurations
-            string uploadServerPath = AppConfig.Configuration["AppSettings:UploadServerPath"];
-            string uploadBaseUrl = AppConfig.Configuration["AppSettings:UploadBaseUrl"];
-            
-            // Validate Max Size
-            int maxSizeMB = uploadType == "Photo" ? 
-                Convert.ToInt32(AppConfig.Configuration["AppSettings:MaxPhotoSizeMB"]) : 
-                Convert.ToInt32(AppConfig.Configuration["AppSettings:MaxDocSizeMB"]);
-                
+            // ── Read config ──────────────────────────────────────────────────
+            string supabaseUrl    = AppConfig.Configuration["AppSettings:SupabaseUrl"];
+            string supabaseKey    = AppConfig.Configuration["AppSettings:SupabaseAnonKey"];
+            string bucket         = AppConfig.Configuration["AppSettings:SupabaseBucket"];
+            int maxSizeMB         = uploadType == "Photo"
+                ? Convert.ToInt32(AppConfig.Configuration["AppSettings:MaxPhotoSizeMB"])
+                : Convert.ToInt32(AppConfig.Configuration["AppSettings:MaxDocSizeMB"]);
+            string allowedExts    = uploadType == "Photo"
+                ? AppConfig.Configuration["AppSettings:AllowedImageExt"]
+                : AppConfig.Configuration["AppSettings:AllowedDocExt"];
+
+            // ── Validate size ─────────────────────────────────────────────────
             if (file.Length > (maxSizeMB * 1024 * 1024))
                 throw new Exception($"{uploadType} must not exceed {maxSizeMB} MB.");
 
-            // Validate Extensions
+            // ── Validate extension ─────────────────────────────────────────────
             string extension = Path.GetExtension(file.FileName).ToLower();
-            string allowedExts = uploadType == "Photo" ? 
-                AppConfig.Configuration["AppSettings:AllowedImageExt"] : 
-                AppConfig.Configuration["AppSettings:AllowedDocExt"];
-
             if (!allowedExts.Split(',').Contains(extension))
                 throw new Exception($"Invalid file extension for {uploadType}. Allowed: {allowedExts}");
 
-            // Generate structural folder paths
-            string year = DateTime.Now.ToString("yyyy");
-            string month = DateTime.Now.ToString("MM");
-            string relativeFolder = uploadType == "Photo" ? $@"Photos\{year}\{month}\" : $@"IDProofs\{year}\{month}\";
-            
-            // Generate names
-            string originalName = Path.GetFileName(file.FileName);
+            // ── Build storage path ─────────────────────────────────────────────
+            string year        = DateTime.Now.ToString("yyyy");
+            string month       = DateTime.Now.ToString("MM");
+            string folder      = uploadType == "Photo" ? "Photos" : "IDProofs";
             string newFileName = Guid.NewGuid().ToString() + extension;
-            string targetDirectory = Path.Combine(uploadServerPath, relativeFolder);
-            string targetFilePath = Path.Combine(targetDirectory, newFileName);
-            
-            string fileUrl = uploadBaseUrl.TrimEnd('/') + "/" + relativeFolder.Replace(@"\", "/") + newFileName;
+            string storagePath = $"{folder}/{year}/{month}/{newFileName}";   // path inside bucket
 
-            // Ensure destination folder exists (Needs permissions on UNC path)
-            if (!Directory.Exists(targetDirectory))
+            // ── Upload to Supabase Storage via REST API ───────────────────────
+            string uploadUrl = $"{supabaseUrl}/storage/v1/object/{bucket}/{storagePath}";
+
+            using var fileStream   = file.OpenReadStream();
+            using var fileContent  = new StreamContent(fileStream);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType ?? "application/octet-stream");
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, uploadUrl);
+            request.Headers.Add("Authorization", $"Bearer {supabaseKey}");
+            request.Headers.Add("x-upsert", "true");   // overwrite if same name
+            request.Content = fileContent;
+
+            var response = _httpClient.SendAsync(request).GetAwaiter().GetResult();
+            if (!response.IsSuccessStatusCode)
             {
-                Directory.CreateDirectory(targetDirectory);
+                string body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                throw new Exception($"Supabase upload failed ({(int)response.StatusCode}): {body}");
             }
 
-            // Save the physical file using System.IO to the UNC path
-            using (var stream = new FileStream(targetFilePath, FileMode.Create))
-            {
-                file.CopyTo(stream);
-            }
+            // ── Build permanent public URL ─────────────────────────────────────
+            string publicUrl = $"{supabaseUrl}/storage/v1/object/public/{bucket}/{storagePath}";
 
-            // Return the model structure needed for DB
             return new FileUploadModel
             {
-                VisitorID = visitorId,
-                UploadType = uploadType,
-                OriginalName = originalName,
-                StoredName = newFileName,
-                FilePath = targetFilePath,
-                FileUrl = fileUrl,
-                FileSizeBytes = file.Length,
-                MimeType = file.ContentType,
-                UploadedDate = DateTime.Now
+                VisitorID      = visitorId,
+                UploadType     = uploadType,
+                OriginalName   = Path.GetFileName(file.FileName),
+                StoredName     = newFileName,
+                FilePath       = storagePath,
+                FileUrl        = publicUrl,
+                FileSizeBytes  = file.Length,
+                MimeType       = file.ContentType,
+                UploadedDate   = DateTime.Now
             };
         }
     }
