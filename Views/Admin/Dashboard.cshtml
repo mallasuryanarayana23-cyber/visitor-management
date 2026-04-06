@@ -1,0 +1,104 @@
+@model VMS.Models.DashboardModel
+
+@{
+    ViewBag.Title = "Admin Dashboard";
+    Layout = "~/Views/Shared/_Layout_Admin.cshtml";
+}
+
+<div class="row mb-4">
+    <!-- Total Visitors Today -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-4 border-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Expected Today</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TodayExpected</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Currently Inside -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-4 border-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Currently Inside (Checked-In)</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.CheckedIn</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checked-Out Today -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-4 border-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Checked-Out Today</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.CheckedOut</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Approvals -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-4 border-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Pending Approvals</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.PendingApprovals</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+         <div class="card shadow mb-4">
+             <div class="card-header py-3">
+                 <h6 class="m-0 font-weight-bold text-primary">Recent Activity Feed</h6>
+             </div>
+             <div class="card-body">
+                 <ul class="list-group list-group-flush">
+                     <!-- This would be populated by the backend -->
+                     <li class="list-group-item d-flex justify-content-between align-items-center">
+                         John Doe checked in at Gate 1
+                         <span class="badge bg-success rounded-pill">10:45 AM</span>
+                     </li>
+                     <li class="list-group-item d-flex justify-content-between align-items-center">
+                         New Visitor registered (VMS-20231024-001)
+                         <span class="badge bg-primary rounded-pill">09:30 AM</span>
+                     </li>
+                     <li class="list-group-item d-flex justify-content-between align-items-center">
+                         Jane Smith checked out
+                         <span class="badge bg-info rounded-pill">08:15 AM</span>
+                     </li>
+                 </ul>
+             </div>
+         </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow border-danger mb-4">
+           <div class="card-body text-center">
+               <h3 class="text-danger">@Model.TotalRegisteredThisMonth</h3>
+               <p class="text-muted">Total Registered This Month</p>
+           </div>
+        </div>
+    </div>
+</div>

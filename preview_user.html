@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pre-Register Visitor - User | VMS</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Toastr -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" />
+    <!-- DataTables -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+    <style>
+        .sidebar-blue {
+            background-color: #0d6efd;
+            min-height: 100vh;
+            color: white;
+        }
+        .sidebar-blue a {
+            color: #e9ecef;
+            text-decoration: none;
+            padding: 10px 15px;
+            display: block;
+        }
+        .sidebar-blue a:hover {
+            background-color: #0b5ed7;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-md-2 d-none d-md-block sidebar-blue shadow">
+                <div class="position-sticky pt-3">
+                    <h4 class="px-3 pb-3 border-bottom text-white">VMS User Panel</h4>
+                    <ul class="nav flex-column mt-3">
+                        <li class="nav-item">
+                            <a class="nav-link" href="preview_user.html">
+                                ➕ Pre-Register Visitor
+                            </a>
+                        </li>
+                        <li class="nav-item mt-2">
+                            <a class="nav-link" href="preview_user_myvisits.html">
+                                📋 My Visits
+                            </a>
+                        </li>
+                        <li class="nav-item mt-5 pt-3 border-top">
+                            <a class="nav-link text-warning" href="preview_admin.html">
+                                🚪 Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="col-md-10 ms-sm-auto px-md-4 py-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Pre-Register Visitor</h1>
+                </div>
+
+                <div class="card shadow-sm">
+    <div class="card-body">
+    </div>
+</div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // FileReader API for Photo
+            $('#photoInput').change(function(){
+                var file = this.files[0];
+                if(file){
+                    if(file.size > 2 * 1024 * 1024){
+                        toastr.error('Photo size must be less than 2MB');
+                        $(this).val('');
+                        $('#photoPreview').hide();
+                        return;
+                    }
+                    var reader = new FileReader();
+                    reader.onload = function(e){
+                        $('#photoPreview').attr('src', e.target.result).show();
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+            // FileReader API for ID Proof (Image preview only)
+            $('#idInput').change(function(){
+                var file = this.files[0];
+                if(file){
+                    if(file.size > 5 * 1024 * 1024){
+                        toastr.error('ID Proof size must be less than 5MB');
+                        $(this).val('');
+                        $('#idPreview').hide();
+                        return;
+                    }
+                    if(file.type.startsWith('image/')){
+                        var reader = new FileReader();
+                        reader.onload = function(e){
+                            $('#idPreview').attr('src', e.target.result).show();
+                        }
+                        reader.readAsDataURL(file);
+                    } else {
+                        $('#idPreview').hide(); // Dont show preview for PDF
+                    }
+                }
+            });
+            // Loading state
+            $('#registerForm').submit(function(e){
+                if($(this).valid() || document.location.protocol === 'file:'){
+                    var formAction = $(this).attr('action') || '';
+                    if (!formAction || formAction === '#' || document.location.protocol === 'file:') {
+                        // SIMULATE SUCCESS FOR STATIC DEMO MODE
+                        e.preventDefault();
+                        $('#submitBtn').html('<span class="spinner-border spinner-border-sm"></span> Processing...').prop('disabled', true);
+                        setTimeout(function() {
+                            // Generate Fake token
+                            var token = "VMS-" + Math.floor(Math.random() * 90000) + 10000;
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Registration Successful!',
+                                text: 'Your generated token is: ' + token,
+                                confirmButtonText: 'View Pass'
+                            }).then((result) => {
+                                $('#submitBtn').html('Generate Visit Token').prop('disabled', false);
+                                $('#registerForm')[0].reset();
+                                $('#photoPreview').hide();
+                                $('#idPreview').hide();
+                            });
+                        }, 1200);
+                    } else {
+                        // REAL MVC SUBMISSION
+                        $('#submitBtn').html('<span class="spinner-border spinner-border-sm"></span> Processing...').prop('disabled', true);
+                    }
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>

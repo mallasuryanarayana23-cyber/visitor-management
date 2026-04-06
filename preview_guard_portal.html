@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guard Portal | VMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f0f4f8; }
+        .sidebar {
+            background: linear-gradient(180deg, #155724 0%, #198754 100%);
+            min-height: 100vh;
+            box-shadow: 4px 0 15px rgba(0,0,0,.15);
+        }
+        .sidebar .brand { font-size: 1.1rem; font-weight: 700; letter-spacing: .5px; }
+        .sidebar .nav-link { color: rgba(255,255,255,.75); border-radius: 8px; margin: 2px 10px; padding: 10px 14px; transition: all .2s; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { background: rgba(255,255,255,.18); color: #fff; }
+        .sidebar .nav-link .icon { font-size: 1.1rem; width: 24px; display: inline-block; }
+        .stat-card { border: none; border-radius: 16px; padding: 20px 24px; transition: transform .2s; }
+        .stat-card:hover { transform: translateY(-3px); }
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+        .badge-status { font-size: .78rem; padding: 5px 10px; border-radius: 20px; }
+        .table-card { border-radius: 16px; border: none; overflow: hidden; }
+        .checkin-row { animation: highlight .8s ease; }
+        @keyframes highlight { 0%{background:#d1fae5} 100%{background:transparent} }
+    </style>
+</head>
+<body>
+<div class="container-fluid p-0">
+<div class="row g-0">
+
+    <!-- ══════════ SIDEBAR ══════════ -->
+    <nav class="col-md-2 sidebar d-flex flex-column py-3">
+        <div class="px-3 mb-4">
+            <div class="brand text-white">🛡️ VMS Guard Post</div>
+            <small class="text-white-50">Security Staff Portal</small>
+        </div>
+        <ul class="nav flex-column flex-grow-1">
+            <li class="nav-item">
+                <a class="nav-link active" href="#" onclick="showView('dashboard', this)">
+                    <span class="icon">📊</span> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" onclick="showView('todaylist', this)">
+                    <span class="icon">📋</span> Today's List
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" onclick="showView('search', this)">
+                    <span class="icon">🔍</span> Search Visitor
+                </a>
+            </li>
+        </ul>
+        <div class="px-3 mt-auto pt-3 border-top border-white border-opacity-25">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <div class="rounded-circle bg-white text-success d-flex align-items-center justify-content-center" style="width:36px;height:36px;font-weight:700;">G</div>
+                <div>
+                    <div class="text-white small fw-semibold">Gate Guard 1</div>
+                    <div class="text-white-50" style="font-size:.75rem;">Main Entrance</div>
+                </div>
+            </div>
+            <a href="preview_admin.html" class="nav-link text-warning px-0">🚪 Logout</a>
+        </div>
+    </nav>
+
+    <!-- ══════════ MAIN ══════════ -->
+    <main class="col-md-10 px-4 py-4">
+
+        <!-- ─── PAGE HEADER ─── -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 class="mb-0 fw-bold text-dark" id="pageTitle">Dashboard</h4>
+                <small class="text-muted" id="pageSubtitle">Today's overview</small>
+            </div>
+            <div class="text-end">
+                <span class="badge bg-success px-3 py-2">🟢 On Duty</span>
+                <div class="text-muted small mt-1" id="liveClock"></div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- VIEW 1: DASHBOARD                        -->
+        <!-- ════════════════════════════════════════ -->
+        <div id="view-dashboard" class="view-section active">
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="stat-card bg-primary text-white shadow-sm">
+                        <div class="small opacity-75 mb-1">Today's Expected</div>
+                        <div class="display-6 fw-bold" id="statExpected">24</div>
+                        <div class="small opacity-75 mt-1">Pre-registered visitors</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-success text-white shadow-sm">
+                        <div class="small opacity-75 mb-1">Checked In</div>
+                        <div class="display-6 fw-bold" id="statCheckedIn">9</div>
+                        <div class="small opacity-75 mt-1">Currently inside</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-secondary text-white shadow-sm">
+                        <div class="small opacity-75 mb-1">Checked Out</div>
+                        <div class="display-6 fw-bold" id="statCheckedOut">6</div>
+                        <div class="small opacity-75 mt-1">Exited today</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card bg-warning text-dark shadow-sm">
+                        <div class="small opacity-75 mb-1">Pending</div>
+                        <div class="display-6 fw-bold" id="statPending">9</div>
+                        <div class="small opacity-75 mt-1">Awaiting arrival</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card table-card shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-semibold">Recent Activity</h6>
+                    <a href="#" class="btn btn-sm btn-outline-success" onclick="showView('todaylist', document.querySelectorAll('.nav-link')[1])">View All →</a>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0" id="recentTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Time</th><th>Visitor</th><th>Token</th><th>Event</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activityLog">
+                            <tr><td>09:15 AM</td><td>Alice Cooper</td><td>VMS-10492</td><td><span class="badge bg-success">Checked In</span></td></tr>
+                            <tr><td>09:02 AM</td><td>Bob Marley</td><td>VMS-10488</td><td><span class="badge bg-success">Checked In</span></td></tr>
+                            <tr><td>08:50 AM</td><td>Charlie Brown</td><td>VMS-10476</td><td><span class="badge bg-secondary">Checked Out</span></td></tr>
+                            <tr><td>08:30 AM</td><td>Diana Prince</td><td>VMS-10470</td><td><span class="badge bg-success">Checked In</span></td></tr>
+                            <tr><td>08:12 AM</td><td>Ethan Hunt</td><td>VMS-10465</td><td><span class="badge bg-secondary">Checked Out</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- VIEW 2: TODAY'S LIST                     -->
+        <!-- ════════════════════════════════════════ -->
+        <div id="view-todaylist" class="view-section">
+            <div class="card table-card shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-semibold">Today's Visitor List</h6>
+                    <div class="d-flex gap-2">
+                        <select class="form-select form-select-sm" id="statusFilter" style="width:150px;">
+                            <option value="">All Status</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Checked-In">Checked In</option>
+                            <option value="Checked-Out">Checked Out</option>
+                        </select>
+                        <input type="text" class="form-control form-control-sm" id="listSearch" placeholder="Search..." style="width:160px;" />
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="visitorsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Token</th>
+                                    <th>Visitor</th>
+                                    <th>Company</th>
+                                    <th>Host</th>
+                                    <th>Scheduled</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="visitorsBody">
+                                <tr data-id="10492" data-status="Pending">
+                                    <td><strong class="text-primary">VMS-10492</strong></td>
+                                    <td>Alice Cooper</td><td>Tech Solutions</td><td>Dr. Smith</td>
+                                    <td>10:30 AM</td>
+                                    <td><span class="badge bg-warning text-dark badge-status">Pending</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success checkin-btn">✅ Check-In</button>
+                                        <button class="btn btn-sm btn-outline-secondary view-visitor-btn" data-name="Alice Cooper" data-token="VMS-10492" data-host="Dr. Smith" data-company="Tech Solutions" data-time="10:30 AM">👁 View</button>
+                                    </td>
+                                </tr>
+                                <tr data-id="10493" data-status="Checked-In">
+                                    <td><strong class="text-primary">VMS-10493</strong></td>
+                                    <td>Bob Marley</td><td>Musicians Inc</td><td>Jane Doe</td>
+                                    <td>09:00 AM</td>
+                                    <td><span class="badge bg-success badge-status">Checked-In</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger checkout-btn">🚪 Check-Out</button>
+                                        <button class="btn btn-sm btn-outline-secondary view-visitor-btn" data-name="Bob Marley" data-token="VMS-10493" data-host="Jane Doe" data-company="Musicians Inc" data-time="09:00 AM">👁 View</button>
+                                    </td>
+                                </tr>
+                                <tr data-id="10494" data-status="Checked-Out">
+                                    <td><strong class="text-primary">VMS-10494</strong></td>
+                                    <td>Charlie Brown</td><td>Snoopy PR</td><td>Dr. Smith</td>
+                                    <td>08:00 AM</td>
+                                    <td><span class="badge bg-secondary badge-status">Checked-Out</span></td>
+                                    <td>
+                                        <span class="text-muted small">Completed</span>
+                                        <button class="btn btn-sm btn-outline-secondary view-visitor-btn" data-name="Charlie Brown" data-token="VMS-10494" data-host="Dr. Smith" data-company="Snoopy PR" data-time="08:00 AM">👁 View</button>
+                                    </td>
+                                </tr>
+                                <tr data-id="10495" data-status="Pending">
+                                    <td><strong class="text-primary">VMS-10495</strong></td>
+                                    <td>Diana Prince</td><td>Wonder Corp</td><td>Jane Doe</td>
+                                    <td>11:00 AM</td>
+                                    <td><span class="badge bg-warning text-dark badge-status">Pending</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success checkin-btn">✅ Check-In</button>
+                                        <button class="btn btn-sm btn-outline-secondary view-visitor-btn" data-name="Diana Prince" data-token="VMS-10495" data-host="Jane Doe" data-company="Wonder Corp" data-time="11:00 AM">👁 View</button>
+                                    </td>
+                                </tr>
+                                <tr data-id="10496" data-status="Pending">
+                                    <td><strong class="text-primary">VMS-10496</strong></td>
+                                    <td>Ethan Hunt</td><td>Mission Corps</td><td>Dr. Smith</td>
+                                    <td>02:00 PM</td>
+                                    <td><span class="badge bg-warning text-dark badge-status">Pending</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success checkin-btn">✅ Check-In</button>
+                                        <button class="btn btn-sm btn-outline-secondary view-visitor-btn" data-name="Ethan Hunt" data-token="VMS-10496" data-host="Dr. Smith" data-company="Mission Corps" data-time="02:00 PM">👁 View</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- VIEW 3: SEARCH VISITOR                   -->
+        <!-- ════════════════════════════════════════ -->
+        <div id="view-search" class="view-section">
+            <div class="card shadow-sm table-card mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="mb-0 fw-semibold">Search & Verify Visitor</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold">Token / Pass Number</label>
+                            <input type="text" class="form-control" id="searchToken" placeholder="e.g. VMS-10492" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Mobile Number</label>
+                            <input type="text" class="form-control" id="searchMobile" placeholder="e.g. 9876543210" />
+                        </div>
+                        <div class="col-md-3 align-self-end">
+                            <button class="btn btn-success w-100" id="searchBtn">🔍 Search</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Result -->
+            <div id="searchResult" class="d-none">
+                <div class="card table-card shadow border-success border-2">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <strong>Visitor Found</strong>
+                        <span class="badge bg-white text-success" id="resultStatus">Pending</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-2 text-center">
+                                <div class="rounded-circle bg-success bg-opacity-10 border border-success d-flex align-items-center justify-content-center mx-auto mb-2"
+                                     style="width:80px;height:80px;font-size:2.2rem;">👤</div>
+                                <span class="badge bg-success" id="resultTokenBadge">VMS-10492</span>
+                            </div>
+                            <div class="col-md-6">
+                                <h5 class="mb-1 fw-bold" id="resultName">Alice Cooper</h5>
+                                <p class="mb-1 text-muted" id="resultCompany">Tech Solutions</p>
+                                <table class="table table-sm table-borderless mt-2 mb-0">
+                                    <tr><td class="fw-semibold text-muted" width="40%">Host</td><td id="resultHost">Dr. Smith</td></tr>
+                                    <tr><td class="fw-semibold text-muted">Scheduled</td><td id="resultTime">10:30 AM</td></tr>
+                                    <tr><td class="fw-semibold text-muted">ID Proof</td><td>DL: ABCD-1234</td></tr>
+                                    <tr><td class="fw-semibold text-muted">Purpose</td><td>Business Meeting</td></tr>
+                                </table>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <div id="resultActions">
+                                    <button class="btn btn-success w-100 mb-2" id="searchCheckinBtn">✅ Check-In Now</button>
+                                    <button class="btn btn-outline-secondary w-100" data-bs-dismiss="" onclick="$('#searchResult').addClass('d-none')">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- No result -->
+            <div id="noResult" class="d-none text-center py-5 text-muted">
+                <div style="font-size:3rem;">🔍</div>
+                <p class="mt-3">No visitor found. Check the token or mobile number.</p>
+            </div>
+        </div>
+
+    </main>
+</div>
+</div>
+
+<!-- Visitor Detail Modal -->
+<div class="modal fade" id="visitorModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title">Visitor Details — <span id="mv-token"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-3 text-center border-end">
+                        <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center mx-auto mb-2" style="width:90px;height:90px;font-size:2.5rem;">👤</div>
+                        <small class="text-muted d-block">Photo</small>
+                        <hr />
+                        <div class="bg-light rounded p-2 text-start">
+                            <small class="text-muted d-block">ID Proof</small>
+                            <small>DL: ABCD-1234</small>
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <table class="table table-sm table-borderless">
+                            <tr><th width="35%">Full Name</th><td id="mv-name"></td></tr>
+                            <tr><th>Company</th><td id="mv-company"></td></tr>
+                            <tr><th>Host</th><td id="mv-host"></td></tr>
+                            <tr><th>Scheduled</th><td id="mv-time"></td></tr>
+                            <tr><th>Purpose</th><td>Business Meeting</td></tr>
+                            <tr><th>Mobile</th><td>9876543210</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script>
+
+    // ── Live clock ──
+    function updateClock() {
+        var now = new Date();
+        document.getElementById('liveClock').textContent = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    }
+    setInterval(updateClock, 1000); updateClock();
+
+    // ── View switcher ──
+    function showView(name, link) {
+        document.querySelectorAll('.view-section').forEach(function(s){ s.classList.remove('active'); });
+        document.querySelectorAll('.nav-link').forEach(function(l){ l.classList.remove('active'); });
+        document.getElementById('view-' + name).classList.add('active');
+        link.classList.add('active');
+        var titles = {dashboard:'Dashboard', todaylist:"Today's List", search:'Search Visitor'};
+        var subs   = {dashboard:"Today's overview", todaylist:'Check-in and check-out visitors', search:'Verify visitor by token or mobile'};
+        document.getElementById('pageTitle').textContent = titles[name];
+        document.getElementById('pageSubtitle').textContent = subs[name];
+        return false;
+    }
+
+    // ── Status filter + search ──
+    function filterList() {
+        var status = $('#statusFilter').val().toLowerCase();
+        var q = $('#listSearch').val().toLowerCase();
+        $('#visitorsBody tr').each(function() {
+            var rowStatus = $(this).data('status').toLowerCase();
+            var rowText   = $(this).text().toLowerCase();
+            var show = true;
+            if (status && rowStatus !== status.replace('-', '-')) show = false;
+            if (q && rowText.indexOf(q) === -1) show = false;
+            $(this).toggle(show);
+        });
+    }
+    $('#statusFilter, #listSearch').on('change input', filterList);
+
+    // ── Check-In ──
+    $(document).on('click', '.checkin-btn', function() {
+        var btn = $(this);
+        var row = btn.closest('tr');
+        var name = row.find('td').eq(1).text();
+        var token = row.find('td').eq(0).text();
+
+        Swal.fire({
+            title: 'Confirm Check-In',
+            html: '<strong>' + name + '</strong><br><small>' + token + '</small>',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            confirmButtonText: '✅ Confirm Check-In'
+        }).then(function(r) {
+            if (r.isConfirmed) {
+                btn.html('<span class="spinner-border spinner-border-sm"></span>').prop('disabled', true);
+                setTimeout(function() {
+                    row.data('status', 'Checked-In');
+                    row.find('.badge-status').removeClass('bg-warning text-dark').addClass('bg-success').text('Checked-In');
+                    btn.replaceWith('<button class="btn btn-sm btn-danger checkout-btn">🚪 Check-Out</button>');
+
+                    // Update dashboard stats
+                    var ci = parseInt($('#statCheckedIn').text()) + 1;
+                    var pend = parseInt($('#statPending').text()) - 1;
+                    $('#statCheckedIn').text(ci);
+                    $('#statPending').text(Math.max(0, pend));
+
+                    // Add to activity log
+                    var now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                    $('#activityLog').prepend('<tr class="checkin-row"><td>' + now + '</td><td>' + name + '</td><td>' + token.trim() + '</td><td><span class="badge bg-success">Checked In</span></td></tr>');
+
+                    toastr.success(name + ' checked in successfully!');
+                    row.addClass('checkin-row');
+                }, 800);
+            }
+        });
+    });
+
+    // ── Check-Out ──
+    $(document).on('click', '.checkout-btn', function() {
+        var btn = $(this);
+        var row = btn.closest('tr');
+        var name = row.find('td').eq(1).text();
+        var token = row.find('td').eq(0).text();
+
+        Swal.fire({
+            title: 'Confirm Check-Out',
+            html: '<strong>' + name + '</strong> is about to exit.<br><small>' + token + '</small>',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: '🚪 Confirm Check-Out'
+        }).then(function(r) {
+            if (r.isConfirmed) {
+                btn.html('<span class="spinner-border spinner-border-sm"></span>').prop('disabled', true);
+                setTimeout(function() {
+                    row.data('status', 'Checked-Out');
+                    row.find('.badge-status').removeClass('bg-success').addClass('bg-secondary').text('Checked-Out');
+                    btn.replaceWith('<span class="text-muted small">Completed</span>');
+
+                    var co = parseInt($('#statCheckedOut').text()) + 1;
+                    var ci = parseInt($('#statCheckedIn').text()) - 1;
+                    $('#statCheckedOut').text(co);
+                    $('#statCheckedIn').text(Math.max(0, ci));
+
+                    var now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                    $('#activityLog').prepend('<tr><td>' + now + '</td><td>' + name + '</td><td>' + token.trim() + '</td><td><span class="badge bg-secondary">Checked Out</span></td></tr>');
+
+                    toastr.warning(name + ' checked out.');
+                }, 800);
+            }
+        });
+    });
+
+    // ── View visitor detail ──
+    $(document).on('click', '.view-visitor-btn', function() {
+        var d = $(this).data();
+        $('#mv-token').text(d.token);
+        $('#mv-name').text(d.name);
+        $('#mv-company').text(d.company);
+        $('#mv-host').text(d.host);
+        $('#mv-time').text(d.time);
+        new bootstrap.Modal(document.getElementById('visitorModal')).show();
+    });
+
+    // ── Search visitor ──
+    var sampleVisitors = {
+        'VMS-10492': {name:'Alice Cooper', company:'Tech Solutions', host:'Dr. Smith', time:'10:30 AM', status:'Pending'},
+        'VMS-10493': {name:'Bob Marley',   company:'Musicians Inc', host:'Jane Doe',  time:'09:00 AM', status:'Checked-In'},
+        'VMS-10494': {name:'Charlie Brown',company:'Snoopy PR',     host:'Dr. Smith', time:'08:00 AM', status:'Checked-Out'},
+        'VMS-10495': {name:'Diana Prince', company:'Wonder Corp',   host:'Jane Doe',  time:'11:00 AM', status:'Pending'},
+    };
+
+    $('#searchBtn').on('click', function() {
+        var token  = $('#searchToken').val().trim().toUpperCase();
+        var mobile = $('#searchMobile').val().trim();
+
+        if (!token && !mobile) {
+            Swal.fire('Required', 'Enter a Token or Mobile Number.', 'warning');
+            return;
+        }
+
+        var btn = $(this);
+        btn.html('<span class="spinner-border spinner-border-sm"></span> Searching...').prop('disabled', true);
+
+        setTimeout(function() {
+            btn.html('🔍 Search').prop('disabled', false);
+            var visitor = sampleVisitors[token] || (mobile === '9876543210' ? sampleVisitors['VMS-10492'] : null);
+
+            if (visitor) {
+                $('#resultName').text(visitor.name);
+                $('#resultCompany').text(visitor.company);
+                $('#resultHost').text(visitor.host);
+                $('#resultTime').text(visitor.time);
+                $('#resultTokenBadge').text(token || 'VMS-10492');
+
+                var statusMap = {'Pending':'bg-warning text-dark', 'Checked-In':'bg-success', 'Checked-Out':'bg-secondary'};
+                $('#resultStatus').text(visitor.status).removeClass().addClass('badge ' + statusMap[visitor.status]);
+
+                if (visitor.status === 'Pending') {
+                    $('#resultActions').html('<button class="btn btn-success w-100 mb-2" id="searchCheckinBtn">✅ Check-In Now</button><button class="btn btn-outline-secondary w-100" onclick="$(\'#searchResult\').addClass(\'d-none\')">Close</button>');
+                } else if (visitor.status === 'Checked-In') {
+                    $('#resultActions').html('<button class="btn btn-danger w-100 mb-2" id="searchCheckoutBtn">🚪 Check-Out Now</button><button class="btn btn-outline-secondary w-100" onclick="$(\'#searchResult\').addClass(\'d-none\')">Close</button>');
+                } else {
+                    $('#resultActions').html('<div class="alert alert-secondary mb-2">Visit completed</div><button class="btn btn-outline-secondary w-100" onclick="$(\'#searchResult\').addClass(\'d-none\')">Close</button>');
+                }
+
+                $('#searchResult').removeClass('d-none');
+                $('#noResult').addClass('d-none');
+            } else {
+                $('#searchResult').addClass('d-none');
+                $('#noResult').removeClass('d-none');
+            }
+        }, 1000);
+    });
+
+    // Search Check-In
+    $(document).on('click', '#searchCheckinBtn', function() {
+        var btn = $(this);
+        btn.html('<span class="spinner-border spinner-border-sm"></span>').prop('disabled', true);
+        setTimeout(function() {
+            $('#resultStatus').text('Checked-In').removeClass().addClass('badge bg-success');
+            $('#resultActions').html('<div class="alert alert-success mb-2">✅ Checked In Successfully!</div><button class="btn btn-outline-secondary w-100" onclick="$(\'#searchResult\').addClass(\'d-none\')">Close</button>');
+            var ci = parseInt($('#statCheckedIn').text()) + 1;
+            $('#statCheckedIn').text(ci);
+            var pend = parseInt($('#statPending').text()) - 1;
+            $('#statPending').text(Math.max(0, pend));
+            toastr.success($('#resultName').text() + ' checked in via search!');
+        }, 800);
+    });
+
+    // Search Check-Out
+    $(document).on('click', '#searchCheckoutBtn', function() {
+        var btn = $(this);
+        btn.html('<span class="spinner-border spinner-border-sm"></span>').prop('disabled', true);
+        setTimeout(function() {
+            $('#resultStatus').text('Checked-Out').removeClass().addClass('badge bg-secondary');
+            $('#resultActions').html('<div class="alert alert-secondary mb-2">🚪 Checked Out Successfully!</div><button class="btn btn-outline-secondary w-100" onclick="$(\'#searchResult\').addClass(\'d-none\')">Close</button>');
+            var co = parseInt($('#statCheckedOut').text()) + 1;
+            $('#statCheckedOut').text(co);
+            toastr.warning($('#resultName').text() + ' checked out via search!');
+        }, 800);
+    });
+
+    // Enter key on search
+    $('#searchToken, #searchMobile').on('keydown', function(e) {
+        if (e.key === 'Enter') $('#searchBtn').click();
+    });
+
+</script>
+</body>
+</html>

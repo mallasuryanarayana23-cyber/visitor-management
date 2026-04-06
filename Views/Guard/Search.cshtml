@@ -1,0 +1,86 @@
+@{
+    ViewBag.Title = "Search Visitor";
+}
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white border-bottom py-3">
+        <h5 class="mb-0">🔍 Search Visitor by Pass / Mobile</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3 mb-4">
+            <div class="col-md-5">
+                <label class="form-label fw-semibold">Token / Pass Number</label>
+                <input type="text" class="form-control" id="searchToken" placeholder="e.g. VMS-10492" />
+            </div>
+            <div class="col-md-5">
+                <label class="form-label fw-semibold">Mobile Number</label>
+                <input type="text" class="form-control" id="searchMobile" placeholder="e.g. 9876543210" />
+            </div>
+            <div class="col-md-2 align-self-end">
+                <button class="btn btn-success w-100" id="searchBtn">Search</button>
+            </div>
+        </div>
+
+        <div id="searchResult" class="d-none">
+            <hr />
+            <div class="card border-success border-2">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-2 text-center">
+                            <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center mx-auto"
+                                style="width:80px;height:80px;font-size:2rem;">👤</div>
+                        </div>
+                        <div class="col-md-7">
+                            <h5 class="mb-1" id="res-name">Alice Cooper</h5>
+                            <p class="mb-1 text-muted" id="res-company">Tech Solutions Ltd.</p>
+                            <p class="mb-1"><strong>Token:</strong> <span id="res-token" class="badge bg-primary">VMS-10492</span></p>
+                            <p class="mb-1"><strong>Host:</strong> <span id="res-host">Dr. Smith – Engineering</span></p>
+                            <p class="mb-0"><strong>Expected:</strong> <span id="res-time">Today, 02:30 PM</span></p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <span class="badge bg-warning text-dark px-3 py-2 mb-3 d-block fs-6" id="res-status">Pending</span>
+                            <button class="btn btn-success w-100 mb-2" id="checkinBtnResult">✅ Check-In</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="noResult" class="d-none text-center py-5 text-muted">
+            <i class="bi bi-search" style="font-size:3rem;"></i>
+            <p class="mt-3">No visitor found. Please check the token or mobile number.</p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#searchBtn').click(function() {
+                var token = $('#searchToken').val().trim();
+                var mobile = $('#searchMobile').val().trim();
+                if (!token && !mobile) {
+                    Swal.fire('Required', 'Please enter a Token or Mobile Number to search.', 'warning');
+                    return;
+                }
+                $(this).html('<span class="spinner-border spinner-border-sm"></span> Searching...').prop('disabled', true);
+                setTimeout(function() {
+                    $('#searchBtn').html('Search').prop('disabled', false);
+                    // Simulate a successful result
+                    $('#searchResult').removeClass('d-none');
+                    $('#noResult').addClass('d-none');
+                    if (token) $('#res-token').text(token);
+                }, 1000);
+            });
+
+            $('#checkinBtnResult').click(function() {
+                $(this).html('<span class="spinner-border spinner-border-sm"></span>').prop('disabled', true);
+                setTimeout(function() {
+                    $('#res-status').removeClass('bg-warning text-dark').addClass('bg-success').text('Checked-In');
+                    $('#checkinBtnResult').replaceWith('<span class="badge bg-success px-3 py-2 fs-6">✅ Checked In</span>');
+                    toastr.success('Visitor Checked-In Successfully!');
+                }, 800);
+            });
+        });
+    </script>
+}

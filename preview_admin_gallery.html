@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Gallery - Admin | VMS</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Toastr -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" />
+    <!-- DataTables -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+    <style>
+        .sidebar-admin {
+            background-color: #212529; /* Dark */
+            border-right: 3px solid #dc3545; /* Red accent */
+            min-height: 100vh;
+            color: white;
+        }
+        .sidebar-admin a {
+            color: #adb5bd;
+            text-decoration: none;
+            padding: 10px 15px;
+            display: block;
+        }
+        .sidebar-admin a:hover {
+            background-color: #dc3545; /* Red */
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-md-2 d-none d-md-block sidebar-admin shadow">
+                <div class="position-sticky pt-3">
+                    <h4 class="px-3 pb-3 border-bottom text-white">VMS Admin Portal</h4>
+                    <ul class="nav flex-column mt-3">
+                        <li class="nav-item">
+                            <a class="nav-link" href="preview_admin.html">
+                                📊 Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="preview_admin_visitors.html">
+                                📇 Visitor Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="preview_admin_gallery.html">
+                                🖼️ Image Gallery
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="preview_admin_reports.html">
+                                📑 Reports
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="preview_admin_users.html">
+                                👥 User Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="preview_admin_masters.html">
+                                ⚙️ Master Data
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="preview_admin_auditlog.html">
+                                📜 Audit Log
+                            </a>
+                        </li>
+                        <li class="nav-item mt-5 pt-3 border-top">
+                            <a class="nav-link text-warning" href="preview_admin.html">
+                                🚪 Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="col-md-10 ms-sm-auto px-md-4 py-4 bg-light">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                    <h1 class="h2 text-danger">Photo Gallery</h1>
+                </div>
+
+                <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white border-bottom py-3">
+        <h5 class="mb-0 text-dark">Captured ID Proofs & Photos</h5>
+    </div>
+    <div class="card-body bg-light">
+        <div class="row row-cols-1 row-cols-md-4 g-4">
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm">
+                    <img src="https://via.placeholder.com/300x200.png?text=Visitor+Photo" class="card-img-top" alt="Visitor 1" style="cursor:pointer;" onclick="openLightbox(this.src)" />
+                    <div class="card-body py-2">
+                        <small class="text-muted">Pass: VMS-10492</small><br/>
+                        <strong>Alice Cooper</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm">
+                    <img src="https://via.placeholder.com/300x200.png?text=ID+Proof" class="card-img-top" alt="ID Proof" style="cursor:pointer;" onclick="openLightbox(this.src)" />
+                    <div class="card-body py-2">
+                        <small class="text-muted">Pass: VMS-10492</small><br/>
+                        <strong>DL: ABCD123</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm">
+                    <img src="https://via.placeholder.com/300x200.png?text=Visitor+Photo" class="card-img-top" alt="Visitor 2" style="cursor:pointer;" onclick="openLightbox(this.src)" />
+                    <div class="card-body py-2">
+                        <small class="text-muted">Pass: VMS-10493</small><br/>
+                        <strong>Bob Marley</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm">
+                    <img src="https://via.placeholder.com/300x200.png?text=ID+Proof" class="card-img-top" alt="ID Proof" style="cursor:pointer;" onclick="openLightbox(this.src)" />
+                    <div class="card-body py-2">
+                        <small class="text-muted">Pass: VMS-10493</small><br/>
+                        <strong>Passport: P1234</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal Lightbox inside layout for global access -->
+    <div class="modal fade" id="imageLightboxModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content border-0 bg-transparent">
+                <div class="modal-body text-center p-0 position-relative">
+                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" style="z-index: 1050;"></button>
+                    <img id="lightboxImg" src="" class="img-fluid rounded shadow-lg" style="max-height: 90vh;" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script>
+        function openLightbox(url) {
+            $('#lightboxImg').attr('src', url);
+            var myModal = new bootstrap.Modal(document.getElementById('imageLightboxModal'));
+            myModal.show();
+        }
+    </script>
+    
+</body>
+</html>

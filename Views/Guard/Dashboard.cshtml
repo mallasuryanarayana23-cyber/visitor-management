@@ -1,0 +1,23 @@
+@{
+    ViewBag.Title = "Guard Dashboard";
+    Layout = "~/Views/Shared/_Layout_Guard.cshtml";
+}
+
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-4 border-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Expected Today</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TodayExpected</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-start border-4 border-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Currently Checked In</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.CheckedIn</div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,54 @@
+@{
+    ViewBag.Title = "Photo Gallery";
+}
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white border-bottom py-3">
+        <h5 class="mb-0 text-dark">Captured ID Proofs & Photos</h5>
+    </div>
+    <div class="card-body bg-light">
+        <div class="row row-cols-1 row-cols-md-4 g-4">
+            
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm">
+                    <img src="https://via.placeholder.com/300x200.png?text=Visitor+Photo" class="card-img-top" alt="Visitor 1" style="cursor:pointer;" onclick="openLightbox(this.src)" />
+                    <div class="card-body py-2">
+                        <small class="text-muted">Pass: VMS-10492</small><br/>
+                        <strong>Alice Cooper</strong>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm">
+                    <img src="https://via.placeholder.com/300x200.png?text=ID+Proof" class="card-img-top" alt="ID Proof" style="cursor:pointer;" onclick="openLightbox(this.src)" />
+                    <div class="card-body py-2">
+                        <small class="text-muted">Pass: VMS-10492</small><br/>
+                        <strong>DL: ABCD123</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm">
+                    <img src="https://via.placeholder.com/300x200.png?text=Visitor+Photo" class="card-img-top" alt="Visitor 2" style="cursor:pointer;" onclick="openLightbox(this.src)" />
+                    <div class="card-body py-2">
+                        <small class="text-muted">Pass: VMS-10493</small><br/>
+                        <strong>Bob Marley</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm">
+                    <img src="https://via.placeholder.com/300x200.png?text=ID+Proof" class="card-img-top" alt="ID Proof" style="cursor:pointer;" onclick="openLightbox(this.src)" />
+                    <div class="card-body py-2">
+                        <small class="text-muted">Pass: VMS-10493</small><br/>
+                        <strong>Passport: P1234</strong>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

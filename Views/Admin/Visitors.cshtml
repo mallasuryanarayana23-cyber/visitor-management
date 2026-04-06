@@ -1,0 +1,263 @@
+@{
+    ViewBag.Title = "Visitor Management";
+}
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 text-dark">All Visitors Database</h5>
+        <div>
+            <button class="btn btn-primary btn-sm" id="addWalkinBtn">+ Add Walk-In</button>
+            <button class="btn btn-outline-secondary btn-sm" id="exportCsvBtn">⬇ Export CSV</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Filter Row -->
+        <div class="row g-2 mb-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">From Date</label>
+                <input type="date" class="form-control" id="filterDateFrom" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">To Date</label>
+                <input type="date" class="form-control" id="filterDateTo" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Status</label>
+                <select class="form-select" id="filterStatus">
+                    <option value="">All</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Checked In">Checked In</option>
+                    <option value="Checked Out">Checked Out</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-dark w-100" id="applyFilterBtn">Filter</button>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-secondary w-100" id="clearFilterBtn">Clear</button>
+            </div>
+        </div>
+
+        <!-- Results Info -->
+        <div id="filterInfo" class="alert alert-info py-2 d-none" role="alert"></div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle" id="adminVisitorsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Pass #</th>
+                        <th>Date</th>
+                        <th>Visitor Name</th>
+                        <th>Company</th>
+                        <th>Host</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="visitorsTableBody">
+                    <tr data-date="2026-09-24" data-status="Pending">
+                        <td><strong>VMS-10492</strong></td>
+                        <td>Sep 24, 2026</td>
+                        <td>Alice Cooper</td>
+                        <td>Tech Solutions</td>
+                        <td>Dr. Smith</td>
+                        <td><span class="badge bg-warning text-dark status-badge">Pending</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary view-btn" data-id="10492">View</button>
+                            <button class="btn btn-sm btn-outline-danger reject-btn">Reject</button>
+                        </td>
+                    </tr>
+                    <tr data-date="2026-09-24" data-status="Checked In">
+                        <td><strong>VMS-10493</strong></td>
+                        <td>Sep 24, 2026</td>
+                        <td>Bob Marley</td>
+                        <td>Musicians Inc</td>
+                        <td>Jane Doe</td>
+                        <td><span class="badge bg-success status-badge">Checked In</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary view-btn" data-id="10493">View</button>
+                            <button class="btn btn-sm btn-outline-secondary" disabled>Reject</button>
+                        </td>
+                    </tr>
+                    <tr data-date="2026-09-23" data-status="Checked Out">
+                        <td><strong>VMS-10494</strong></td>
+                        <td>Sep 23, 2026</td>
+                        <td>Charlie Brown</td>
+                        <td>Snoopy PR</td>
+                        <td>Dr. Smith</td>
+                        <td><span class="badge bg-secondary status-badge">Checked Out</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary view-btn" data-id="10494">View</button>
+                        </td>
+                    </tr>
+                    <tr data-date="2026-09-22" data-status="Pending">
+                        <td><strong>VMS-10490</strong></td>
+                        <td>Sep 22, 2026</td>
+                        <td>Diana Prince</td>
+                        <td>Wonder Corp</td>
+                        <td>Jane Doe</td>
+                        <td><span class="badge bg-warning text-dark status-badge">Pending</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary view-btn" data-id="10490">View</button>
+                            <button class="btn btn-sm btn-outline-danger reject-btn">Reject</button>
+                        </td>
+                    </tr>
+                    <tr data-date="2026-09-21" data-status="Checked Out">
+                        <td><strong>VMS-10489</strong></td>
+                        <td>Sep 21, 2026</td>
+                        <td>Ethan Hunt</td>
+                        <td>Mission Corps</td>
+                        <td>Dr. Smith</td>
+                        <td><span class="badge bg-secondary status-badge">Checked Out</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary view-btn" data-id="10489">View</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- View Visitor Modal -->
+<div class="modal fade" id="viewVisitorModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title">Visitor Details – <span id="modal-pass-id"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-3 text-center border-end">
+                        <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center mx-auto mb-2" style="width:90px;height:90px;font-size:2.5rem;">👤</div>
+                        <small class="text-muted">Visitor Photo</small>
+                        <hr />
+                        <div class="bg-light rounded p-2">
+                            <small class="text-muted d-block">ID Proof</small>
+                            <small>DL: ABCD-123</small>
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <table class="table table-sm table-borderless">
+                            <tr><th width="35%">Full Name</th><td id="modal-v-name">Alice Cooper</td></tr>
+                            <tr><th>Company</th><td id="modal-v-company">Tech Solutions</td></tr>
+                            <tr><th>Mobile</th><td>9876543210</td></tr>
+                            <tr><th>Host</th><td id="modal-v-host">Dr. Smith – Engineering</td></tr>
+                            <tr><th>Purpose</th><td>Business Meeting</td></tr>
+                            <tr><th>Scheduled Date</th><td id="modal-v-date">Sep 24, 2026</td></tr>
+                            <tr><th>Status</th><td><span class="badge bg-warning text-dark" id="modal-v-status">Pending</span></td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var table;
+        $(document).ready(function () {
+            table = $('#adminVisitorsTable').DataTable({
+                "order": [[1, "desc"]],
+                "pageLength": 10,
+                "columnDefs": [{ "orderable": false, "targets": 6 }]
+            });
+
+            // ---- Date Range + Status Filter ----
+            $('#applyFilterBtn').click(function () {
+                var fromDate = $('#filterDateFrom').val();
+                var toDate = $('#filterDateTo').val();
+                var status = $('#filterStatus').val();
+
+                if (!fromDate && !toDate && !status) {
+                    toastr.warning('Please select at least one filter.');
+                    return;
+                }
+
+                var matched = 0;
+                $('#visitorsTableBody tr').each(function () {
+                    var rowDate = $(this).data('date');      // e.g. "2026-09-24"
+                    var rowStatus = $(this).data('status');  // e.g. "Pending"
+                    var show = true;
+
+                    if (fromDate && rowDate < fromDate) show = false;
+                    if (toDate && rowDate > toDate) show = false;
+                    if (status && rowStatus !== status) show = false;
+
+                    if (show) {
+                        $(this).show();
+                        matched++;
+                    } else {
+                        $(this).hide();
+                    }
+                });
+
+                var info = '';
+                if (fromDate) info += ' From: <strong>' + fromDate + '</strong>';
+                if (toDate) info += ' To: <strong>' + toDate + '</strong>';
+                if (status) info += ' Status: <strong>' + status + '</strong>';
+                $('#filterInfo').html('🔍 Showing <strong>' + matched + '</strong> record(s) matching:' + info).removeClass('d-none');
+            });
+
+            // ---- Clear Filter ----
+            $('#clearFilterBtn').click(function () {
+                $('#filterDateFrom').val('');
+                $('#filterDateTo').val('');
+                $('#filterStatus').val('');
+                $('#visitorsTableBody tr').show();
+                $('#filterInfo').addClass('d-none');
+                toastr.info('Filters cleared.');
+            });
+
+            // ---- View Visitor ----
+            $(document).on('click', '.view-btn', function () {
+                var row = $(this).closest('tr');
+                var cells = row.find('td');
+                $('#modal-pass-id').text(cells.eq(0).text());
+                $('#modal-v-name').text(cells.eq(2).text());
+                $('#modal-v-company').text(cells.eq(3).text());
+                $('#modal-v-host').text(cells.eq(4).text());
+                $('#modal-v-date').text(cells.eq(1).text());
+                var statusText = cells.eq(5).find('.badge').text();
+                var statusClass = cells.eq(5).find('.badge').attr('class').replace('badge ', '');
+                $('#modal-v-status').text(statusText).removeClass().addClass('badge ' + statusClass);
+                new bootstrap.Modal(document.getElementById('viewVisitorModal')).show();
+            });
+
+            // ---- Reject ----
+            $(document).on('click', '.reject-btn', function () {
+                var row = $(this).closest('tr');
+                var name = row.find('td').eq(2).text();
+                Swal.fire({
+                    title: 'Reject Visit?',
+                    text: 'Reject the visit request for ' + name + '?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    confirmButtonText: 'Yes, Reject!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        row.find('.status-badge').removeClass().addClass('badge bg-danger status-badge').text('Rejected');
+                        row.find('.reject-btn').remove();
+                        toastr.error(name + '\'s visit has been rejected.');
+                    }
+                });
+            });
+
+            // ---- Export CSV ----
+            $('#exportCsvBtn').click(function () {
+                Swal.fire({ icon: 'success', title: 'Export Ready', text: 'Visitor data exported to CSV successfully!', timer: 2000, showConfirmButton: false });
+            });
+
+            // ---- Add Walk-In ----
+            $('#addWalkinBtn').click(function () {
+                Swal.fire({ icon: 'info', title: 'Walk-In Registration', text: 'This opens the walk-in registration form connected to the Oracle backend.' });
+            });
+        });
+    </script>
+}

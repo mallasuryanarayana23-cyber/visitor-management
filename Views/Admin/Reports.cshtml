@@ -1,0 +1,289 @@
+@{
+    ViewBag.Title = "Analytics & Reports";
+}
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 bg-primary text-white h-100">
+            <div class="card-body">
+                <h6>Total Visitors (Monthly)</h6>
+                <h2 class="display-6">1,492</h2>
+                <small>↑ 15% from last month</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 bg-warning text-dark h-100">
+            <div class="card-body">
+                <h6>Busiest Department</h6>
+                <h2 class="display-6">Engineering</h2>
+                <small>340 visitors this month</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 bg-success text-white h-100">
+            <div class="card-body">
+                <h6>Top Host</h6>
+                <h2 class="display-6">Dr. Smith</h2>
+                <small>82 visitor approvals</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Generator -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 border-bottom">
+        <h5 class="mb-0">Generate Custom Report</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Report Type</label>
+                <select class="form-select" id="reportType">
+                    <option value="daily">Daily Walk-ins</option>
+                    <option value="host">Host Approvals</option>
+                    <option value="dept">Department Summary</option>
+                    <option value="overstay">Overstayed Visitors</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">From Date</label>
+                <input type="date" class="form-control" id="reportFrom" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">To Date</label>
+                <input type="date" class="form-control" id="reportTo" />
+            </div>
+            <div class="col-md-3 align-self-end">
+                <button class="btn btn-primary w-100" id="generateBtn">Generate Report</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Output Section (hidden until generated) -->
+<div id="reportOutput" class="d-none">
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="mb-0" id="reportTitle">Report Preview</h6>
+            <div>
+                <button class="btn btn-danger btn-sm me-2" id="downloadPdfBtn">
+                    📄 Download PDF
+                </button>
+                <button class="btn btn-success btn-sm" id="downloadCsvBtn">
+                    📊 Download CSV
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Printable report area -->
+            <div id="printableReport" style="font-family: Arial, sans-serif;">
+                <div class="border-bottom pb-3 mb-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0 text-dark" id="reportHeading"></h4>
+                        <small class="text-muted" id="reportSubHeading"></small>
+                    </div>
+                    <div class="text-end">
+                        <strong>VMS – Visitor Management System</strong><br />
+                        <small class="text-muted" id="reportGeneratedAt"></small>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm align-middle" id="reportTable">
+                        <thead class="table-dark" id="reportTableHead"></thead>
+                        <tbody id="reportTableBody"></tbody>
+                    </table>
+                </div>
+                <div class="row mt-3 pt-3 border-top">
+                    <div class="col-md-4">
+                        <div class="bg-light rounded p-2 text-center">
+                            <strong id="stat1Val">--</strong><br /><small id="stat1Label">Total Records</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="bg-light rounded p-2 text-center">
+                            <strong id="stat2Val">--</strong><br /><small id="stat2Label">Checked In</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="bg-light rounded p-2 text-center">
+                            <strong id="stat3Val">--</strong><br /><small id="stat3Label">Checked Out</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- jsPDF + AutoTable for real PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        // Sample data sets per report type
+        var reportData = {
+            daily: {
+                title: "Daily Walk-ins Report",
+                headers: ["Pass #", "Date", "Visitor", "Company", "Host", "Status"],
+                rows: [
+                    ["VMS-10492", "2026-09-24", "Alice Cooper", "Tech Solutions", "Dr. Smith", "Pending"],
+                    ["VMS-10493", "2026-09-24", "Bob Marley", "Musicians Inc", "Jane Doe", "Checked In"],
+                    ["VMS-10494", "2026-09-23", "Charlie Brown", "Snoopy PR", "Dr. Smith", "Checked Out"],
+                    ["VMS-10490", "2026-09-22", "Diana Prince", "Wonder Corp", "Jane Doe", "Pending"],
+                    ["VMS-10489", "2026-09-21", "Ethan Hunt", "Mission Corps", "Dr. Smith", "Checked Out"]
+                ],
+                stats: ["5", "1", "2"]
+            },
+            host: {
+                title: "Host Approvals Report",
+                headers: ["Host Name", "Department", "Total Approvals", "Pending", "Checked In", "Checked Out"],
+                rows: [
+                    ["Dr. Smith", "Engineering", "82", "3", "10", "69"],
+                    ["Jane Doe", "HR", "45", "1", "5", "39"],
+                    ["Mr. Davis", "Finance", "31", "0", "2", "29"]
+                ],
+                stats: ["158", "4", "137"]
+            },
+            dept: {
+                title: "Department Summary Report",
+                headers: ["Department", "Total Visitors", "This Month", "Avg Per Day"],
+                rows: [
+                    ["Engineering", "340", "82", "2.7"],
+                    ["HR", "210", "45", "1.5"],
+                    ["Finance", "180", "31", "1.0"],
+                    ["Executive", "95", "22", "0.7"],
+                    ["IT Support", "132", "38", "1.3"]
+                ],
+                stats: ["957", "218", "--"]
+            },
+            overstay: {
+                title: "Overstayed Visitors Report",
+                headers: ["Pass #", "Visitor", "Scheduled Out", "Actual Out", "Overstay (hrs)", "Status"],
+                rows: [
+                    ["VMS-10455", "Mark Twain", "2026-09-20 05:00 PM", "2026-09-20 07:45 PM", "2.75", "Resolved"],
+                    ["VMS-10412", "Sarah Connor", "2026-09-18 03:00 PM", "Not Checked Out", "–", "Active"]
+                ],
+                stats: ["2", "1", "1"]
+            }
+        };
+
+        var currentData = null;
+
+        // Set today as default dates
+        var today = new Date().toISOString().split('T')[0];
+        var lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        $('#reportFrom').val(lastWeek);
+        $('#reportTo').val(today);
+
+        // Generate Report
+        $('#generateBtn').click(function () {
+            var type = $('#reportType').val();
+            var from = $('#reportFrom').val();
+            var to = $('#reportTo').val();
+
+            if (!from || !to) {
+                Swal.fire('Required', 'Please select both From and To dates.', 'warning');
+                return;
+            }
+            if (from > to) {
+                Swal.fire('Invalid Range', 'From Date cannot be later than To Date.', 'error');
+                return;
+            }
+
+            $(this).html('<span class="spinner-border spinner-border-sm"></span> Generating...').prop('disabled', true);
+            var btn = $(this);
+
+            setTimeout(function () {
+                btn.html('Generate Report').prop('disabled', false);
+                currentData = reportData[type];
+
+                // Populate report
+                $('#reportHeading').text(currentData.title);
+                $('#reportSubHeading').text('Period: ' + from + ' to ' + to);
+                $('#reportGeneratedAt').text('Generated: ' + new Date().toLocaleString());
+                $('#reportTitle').text(currentData.title);
+
+                // Table head
+                var thead = '<tr>' + currentData.headers.map(h => '<th>' + h + '</th>').join('') + '</tr>';
+                $('#reportTableHead').html(thead);
+
+                // Table body
+                var tbody = currentData.rows.map(function (row) {
+                    return '<tr>' + row.map(function (cell) {
+                        var cls = '';
+                        if (cell === 'Pending') cls = ' class="text-warning fw-bold"';
+                        else if (cell === 'Checked In') cls = ' class="text-success fw-bold"';
+                        else if (cell === 'Checked Out') cls = ' class="text-secondary"';
+                        return '<td' + cls + '>' + cell + '</td>';
+                    }).join('') + '</tr>';
+                }).join('');
+                $('#reportTableBody').html(tbody);
+
+                // Stats
+                $('#stat1Val').text(currentData.stats[0]);
+                $('#stat2Val').text(currentData.stats[1]);
+                $('#stat3Val').text(currentData.stats[2]);
+
+                // Show section
+                $('#reportOutput').removeClass('d-none');
+                $('html, body').animate({ scrollTop: $('#reportOutput').offset().top - 20 }, 500);
+                toastr.success('Report generated successfully!');
+            }, 1200);
+        });
+
+        // Download PDF using jsPDF
+        $('#downloadPdfBtn').click(function () {
+            if (!currentData) return;
+            const { jsPDF } = window.jspdf;
+            var doc = new jsPDF();
+            
+            doc.setFontSize(16);
+            doc.text(currentData.title, 14, 20);
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text('Period: ' + $('#reportFrom').val() + ' to ' + $('#reportTo').val(), 14, 28);
+            doc.text('Generated: ' + new Date().toLocaleString(), 14, 34);
+            doc.text('VMS – Visitor Management System', 14, 40);
+
+            doc.autoTable({
+                head: [currentData.headers],
+                body: currentData.rows,
+                startY: 47,
+                styles: { fontSize: 9 },
+                headStyles: { fillColor: [33, 37, 41] },
+                alternateRowStyles: { fillColor: [248, 249, 250] }
+            });
+
+            doc.text('Total: ' + currentData.stats[0] + '  |  Checked In: ' + currentData.stats[1] + '  |  Checked Out: ' + currentData.stats[2],
+                14, doc.lastAutoTable.finalY + 10);
+
+            var fileName = currentData.title.replace(/\s+/g, '_') + '_' + $('#reportFrom').val() + '.pdf';
+            doc.save(fileName);
+            toastr.success('PDF downloaded: ' + fileName);
+        });
+
+        // Download CSV
+        $('#downloadCsvBtn').click(function () {
+            if (!currentData) return;
+            var csvRows = [currentData.headers.join(',')];
+            currentData.rows.forEach(function (row) {
+                csvRows.push(row.map(function (cell) {
+                    return '"' + cell + '"';
+                }).join(','));
+            });
+            var csvContent = csvRows.join('\n');
+            var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = currentData.title.replace(/\s+/g, '_') + '_' + $('#reportFrom').val() + '.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+            toastr.success('CSV downloaded successfully!');
+        });
+    </script>
+}

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Users - Admin | VMS</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Toastr -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" />
+    <!-- DataTables -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+    <style>
+        .sidebar-admin {
+            background-color: #212529; /* Dark */
+            border-right: 3px solid #dc3545; /* Red accent */
+            min-height: 100vh;
+            color: white;
+        }
+        .sidebar-admin a {
+            color: #adb5bd;
+            text-decoration: none;
+            padding: 10px 15px;
+            display: block;
+        }
+        .sidebar-admin a:hover {
+            background-color: #dc3545; /* Red */
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-md-2 d-none d-md-block sidebar-admin shadow">
+                <div class="position-sticky pt-3">
+                    <h4 class="px-3 pb-3 border-bottom text-white">VMS Admin Portal</h4>
+                    <ul class="nav flex-column mt-3">
+                        <li class="nav-item">
+                            <a class="nav-link" href="preview_admin.html">
+                                📊 Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="preview_admin_visitors.html">
+                                📇 Visitor Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="preview_admin_gallery.html">
+                                🖼️ Image Gallery
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="preview_admin_reports.html">
+                                📑 Reports
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="preview_admin_users.html">
+                                👥 User Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="preview_admin_masters.html">
+                                ⚙️ Master Data
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="preview_admin_auditlog.html">
+                                📜 Audit Log
+                            </a>
+                        </li>
+                        <li class="nav-item mt-5 pt-3 border-top">
+                            <a class="nav-link text-warning" href="preview_admin.html">
+                                🚪 Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="col-md-10 ms-sm-auto px-md-4 py-4 bg-light">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                    <h1 class="h2 text-danger">System Users</h1>
+                </div>
+
+                <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 text-dark">Staff & Users</h5>
+        <div>
+            <button class="btn btn-primary btn-sm me-2" id="guardPasswordBtn">🔐 Guard Password Setup</button>
+            <button class="btn btn-success btn-sm" id="addUserBtn">+ Add New User</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle" id="usersTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Employee ID / Guard No.</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr data-id="9703436421">
+                        <td>9703436421</td>
+                        <td>Admin Root</td>
+                        <td>admin@vms.com</td>
+                        <td><span class="badge bg-danger">Administrator</span></td>
+                        <td><span class="text-success fw-bold">● Active</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-dark edit-user-btn"
+                                data-id="9703436421" data-name="Admin Root" data-email="admin@vms.com" data-role="Admin">Edit</button>
+                            <button class="btn btn-sm btn-outline-secondary toggle-status-btn" data-status="active">Deactivate</button>
+                        </td>
+                    </tr>
+                    <tr data-id="GUARD001">
+                        <td>GUARD001</td>
+                        <td>Main Gate Guard</td>
+                        <td>guard1@vms.com</td>
+                        <td><span class="badge bg-success">Security Guard</span></td>
+                        <td><span class="text-success fw-bold">● Active</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-dark edit-user-btn"
+                                data-id="GUARD001" data-name="Main Gate Guard" data-email="guard1@vms.com" data-role="Guard">Edit</button>
+                            <button class="btn btn-sm btn-outline-warning reset-btn">Reset PW</button>
+                            <button class="btn btn-sm btn-outline-secondary toggle-status-btn" data-status="active">Deactivate</button>
+                        </td>
+                    </tr>
+                    <tr data-id="EMP001">
+                        <td>EMP001</td>
+                        <td>Dr. Smith</td>
+                        <td>smith@vms.com</td>
+                        <td><span class="badge bg-primary">Host Employee</span></td>
+                        <td><span class="text-success fw-bold">● Active</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-dark edit-user-btn"
+                                data-id="EMP001" data-name="Dr. Smith" data-email="smith@vms.com" data-role="User">Edit</button>
+                            <button class="btn btn-sm btn-outline-secondary toggle-status-btn" data-status="active">Deactivate</button>
+                        </td>
+                    </tr>
+                    <tr data-id="EMP002">
+                        <td>EMP002</td>
+                        <td>Jane Doe</td>
+                        <td>jane@vms.com</td>
+                        <td><span class="badge bg-primary">Host Employee</span></td>
+                        <td><span class="text-danger fw-bold">● Inactive</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-dark edit-user-btn"
+                                data-id="EMP002" data-name="Jane Doe" data-email="jane@vms.com" data-role="User">Edit</button>
+                            <button class="btn btn-sm btn-outline-success toggle-status-btn" data-status="inactive">Activate</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<!-- Add / Edit User Modal -->
+<div class="modal fade" id="userModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="userModalTitle">Add New User</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm" novalidate>
+                    <input type="hidden" id="editUserId" />
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Employee ID / Guard No. <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="userEmpId" placeholder="e.g. GUARD002 or EMP500" required />
+                        <div class="invalid-feedback">Employee ID is required.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="userName" placeholder="e.g. John Smith" required />
+                        <div class="invalid-feedback">Name is required.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control" id="userEmail" placeholder="e.g. john@vms.com" required />
+                        <div class="invalid-feedback">Valid email is required.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
+                        <select class="form-select" id="userRole" required>
+                            <option value="">-- Select Role --</option>
+                            <option value="Admin">Administrator</option>
+                            <option value="Guard">Security Guard</option>
+                            <option value="User">Host Employee</option>
+                        </select>
+                        <div class="invalid-feedback">Please select a role.</div>
+                    </div>
+                    <div id="passwordSection" class="mb-3">
+                        <label class="form-label fw-semibold">Initial Password <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="userPassword" placeholder="Minimum 8 characters" />
+                        <div class="invalid-feedback">Password is required (min 8 chars).</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Department</label>
+                        <select class="form-select" id="userDept">
+                            <option value="">-- Select Department --</option>
+                            <option>Engineering</option>
+                            <option>Human Resources</option>
+                            <option>Finance</option>
+                            <option>Executive</option>
+                            <option>IT Support</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-success" id="saveUserBtn">💾 Save User</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">Reset Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Set new password for <strong id="resetUserName"></strong>:</p>
+                <input type="password" class="form-control" id="newPassword" placeholder="New password (min 8 chars)" />
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-warning btn-sm" id="confirmResetBtn">Reset</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Guard Password Setup Modal -->
+<div class="modal fade" id="guardPasswordModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Guard Password Setup</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="guardPasswordForm" novalidate>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Employee No <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="guardEmpNo" placeholder="Enter Guard Emp No" required />
+                        <div class="invalid-feedback">Employee No is required.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">New Password <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="guardNewPassword" placeholder="Minimum 8 characters" required />
+                        <div class="invalid-feedback">Valid password required (min 8).</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-primary btn-sm" id="saveGuardPasswordBtn">Set Password</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal Lightbox inside layout for global access -->
+    <div class="modal fade" id="imageLightboxModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content border-0 bg-transparent">
+                <div class="modal-body text-center p-0 position-relative">
+                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" style="z-index: 1050;"></button>
+                    <img id="lightboxImg" src="" class="img-fluid rounded shadow-lg" style="max-height: 90vh;" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script>
+        function openLightbox(url) {
+            $('#lightboxImg').attr('src', url);
+            var myModal = new bootstrap.Modal(document.getElementById('imageLightboxModal'));
+            myModal.show();
+        }
+    </script>
+    <script>
+        var userCounter = 5;
+        var roleBadge = {
+            'Admin': '<span class="badge bg-danger">Administrator</span>',
+            'Guard': '<span class="badge bg-success">Security Guard</span>',
+            'User':  '<span class="badge bg-primary">Host Employee</span>'
+        };
+        $(document).ready(function () {
+            $('#usersTable').DataTable({ "pageLength": 10 });
+            // ---- Open ADD modal ----
+            $('#addUserBtn').click(function () {
+                $('#userModalTitle').text('Add New User');
+                $('#userForm')[0].reset();
+                $('#userEmpId').prop('readonly', false);
+                $('#userForm .is-invalid').removeClass('is-invalid');
+                $('#editUserId').val('');
+                $('#passwordSection').show();
+                new bootstrap.Modal(document.getElementById('userModal')).show();
+            });
+            // ---- Open EDIT modal ----
+            $(document).on('click', '.edit-user-btn', function () {
+                $('#userModalTitle').text('Edit User');
+                $('#editUserId').val($(this).data('id'));
+                $('#userEmpId').val($(this).data('id')).prop('readonly', true);
+                $('#userName').val($(this).data('name'));
+                $('#userEmail').val($(this).data('email'));
+                $('#userRole').val($(this).data('role'));
+                $('#userPassword').val('');
+                $('#passwordSection').hide(); // don't force password on edit
+                $('#userForm .is-invalid').removeClass('is-invalid');
+                new bootstrap.Modal(document.getElementById('userModal')).show();
+            });
+            // ---- Save User (Add or Edit) ----
+            $('#saveUserBtn').click(function () {
+                var valid = true;
+                var empId = $('#userEmpId').val().trim();
+                var name  = $('#userName').val().trim();
+                var email = $('#userEmail').val().trim();
+                var role  = $('#userRole').val();
+                var pass  = $('#userPassword').val().trim();
+                var isEdit = !!$('#editUserId').val();
+                if (!empId) { $('#userEmpId').addClass('is-invalid'); valid = false; } else { $('#userEmpId').removeClass('is-invalid'); }
+                if (!name)  { $('#userName').addClass('is-invalid');  valid = false; } else { $('#userName').removeClass('is-invalid'); }
+                if (!email || !/\S+@\S+\.\S+/.test(email)) { $('#userEmail').addClass('is-invalid'); valid = false; } else { $('#userEmail').removeClass('is-invalid'); }
+                if (!role)  { $('#userRole').addClass('is-invalid');  valid = false; } else { $('#userRole').removeClass('is-invalid'); }
+                if (!isEdit && (!pass || pass.length < 8)) { $('#userPassword').addClass('is-invalid'); valid = false; } else { $('#userPassword').removeClass('is-invalid'); }
+                if (!valid) return;
+                $(this).html('<span class="spinner-border spinner-border-sm"></span> Saving...').prop('disabled', true);
+                var btn = $(this);
+                setTimeout(function () {
+                    btn.html('💾 Save User').prop('disabled', false);
+                    bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
+                    if (isEdit) {
+                        // Update existing row
+                        var row = $('[data-id="' + $('#editUserId').val() + '"]');
+                        row.find('td').eq(1).text(name);
+                        row.find('td').eq(2).text(email);
+                        row.find('td').eq(3).html(roleBadge[role]);
+                        row.find('.edit-user-btn').data('name', name).data('email', email).data('role', role);
+                        toastr.success('User updated successfully!');
+                    } else {
+                        // Add new row to table
+                        var newRow = '<tr data-id="' + empId + '">' +
+                            '<td>' + empId + '</td>' +
+                            '<td>' + name + '</td>' +
+                            '<td>' + email + '</td>' +
+                            '<td>' + roleBadge[role] + '</td>' +
+                            '<td><span class="text-success fw-bold">● Active</span></td>' +
+                            '<td>' +
+                              '<button class="btn btn-sm btn-outline-dark edit-user-btn" data-id="' + empId + '" data-name="' + name + '" data-email="' + email + '" data-role="' + role + '">Edit</button> ' +
+                              '<button class="btn btn-sm btn-outline-secondary toggle-status-btn" data-status="active">Deactivate</button>' +
+                            '</td>' +
+                            '</tr>';
+                        $('#usersTableBody').prepend(newRow);
+                        toastr.success('User "' + empId + '" provisioned! They can now log in.');
+                    }
+                }, 900);
+            });
+            // ---- Toggle Active/Inactive ----
+            $(document).on('click', '.toggle-status-btn', function () {
+                var btn = $(this);
+                var row = btn.closest('tr');
+                var currentStatus = btn.data('status');
+                var name = row.find('td').eq(1).text();
+                if (currentStatus === 'active') {
+                    Swal.fire({
+                        title: 'Deactivate User?',
+                        text: name + ' will no longer be able to log in.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#ffc107',
+                        confirmButtonText: 'Yes, Deactivate'
+                    }).then(function (result) {
+                        if (result.isConfirmed) {
+                            row.find('td').eq(4).html('<span class="text-danger fw-bold">● Inactive</span>');
+                            btn.text('Activate').removeClass('btn-outline-secondary').addClass('btn-outline-success').data('status', 'inactive');
+                            toastr.warning(name + ' has been deactivated.');
+                        }
+                    });
+                } else {
+                    row.find('td').eq(4).html('<span class="text-success fw-bold">● Active</span>');
+                    btn.text('Deactivate').removeClass('btn-outline-success').addClass('btn-outline-secondary').data('status', 'active');
+                    toastr.success(name + ' has been activated.');
+                }
+            });
+            // ---- Reset Password ----
+            $(document).on('click', '.reset-btn', function () {
+                var name = $(this).closest('tr').find('td').eq(1).text();
+                $('#resetUserName').text(name);
+                $('#newPassword').val('');
+                new bootstrap.Modal(document.getElementById('resetModal')).show();
+            });
+            $('#confirmResetBtn').click(function () {
+                var pw = $('#newPassword').val().trim();
+                if (!pw || pw.length < 8) {
+                    toastr.error('Password must be at least 8 characters.');
+                    return;
+                }
+                bootstrap.Modal.getInstance(document.getElementById('resetModal')).hide();
+                toastr.success('Password reset successfully for ' + $('#resetUserName').text() + '!');
+            });
+            // ---- Guard Password Setup ----
+            $('#guardPasswordBtn').click(function () {
+                $('#guardPasswordForm')[0].reset();
+                $('#guardPasswordForm .is-invalid').removeClass('is-invalid');
+                new bootstrap.Modal(document.getElementById('guardPasswordModal')).show();
+            });
+            $('#saveGuardPasswordBtn').click(function () {
+                var valid = true;
+                var empNo = $('#guardEmpNo').val().trim();
+                var pw = $('#guardNewPassword').val().trim();
+                if (!empNo) { $('#guardEmpNo').addClass('is-invalid'); valid = false; } else { $('#guardEmpNo').removeClass('is-invalid'); }
+                if (!pw || pw.length < 8) { $('#guardNewPassword').addClass('is-invalid'); valid = false; } else { $('#guardNewPassword').removeClass('is-invalid'); }
+                if (!valid) return;
+                $(this).html('<span class="spinner-border spinner-border-sm"></span> Saving...').prop('disabled', true);
+                var btn = $(this);
+                setTimeout(function () {
+                    btn.html('Set Password').prop('disabled', false);
+                    bootstrap.Modal.getInstance(document.getElementById('guardPasswordModal')).hide();
+                    toastr.success('Password created for Guard Employee No: ' + empNo);
+                }, 900);
+            });
+        });
+    </script>
+
+</body>
+</html>

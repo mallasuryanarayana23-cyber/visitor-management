@@ -1,0 +1,155 @@
+@{
+    ViewBag.Title = "Today's Visitor List";
+    Layout = "~/Views/Shared/_Layout_Guard.cshtml";
+}
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover w-100" id="guardVisitorsTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Visit Token</th>
+                        <th>Photo</th>
+                        <th>Name</th>
+                        <th>Host</th>
+                        <th>Purpose</th>
+                        <th>Expected Time</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Example row; in real life populated via AJAX loop -->
+                    <tr>
+                        <td class="fw-bold">VMS-20231024-001</td>
+                        <td>
+                            <img src="http://fileserver/VisitorPhotos/Photos/2023/10/dummy.jpg" class="rounded-circle" width="40" height="40" onclick="openLightbox(this.src)" style="cursor:pointer;" />
+                        </td>
+                        <td>John Doe<br><small class="text-muted">9876543210</small></td>
+                        <td>Mr. Smith (IT)</td>
+                        <td>Meeting</td>
+                        <td>10:00 AM</td>
+                        <td><span class="badge bg-warning text-dark status-badge">Pending</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-success checkin-btn" data-id="1">Check-In</button>
+                            <button class="btn btn-sm btn-outline-info" onclick="openLightbox('http://fileserver/VisitorPhotos/IDProofs/2023/10/doc.jpg')">View ID</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Initialize DataTables
+            var table = $('#guardVisitorsTable').DataTable({
+                "pageLength": 10,
+                "ordering": true,
+                "order": [[ 5, "asc" ]] // Order by Expected Time
+            });
+
+            // Check-In Action
+            $('#guardVisitorsTable').on('click', '.checkin-btn', function() {
+                var btn = $(this);
+                var visitorId = btn.data('id');
+                var visitorRow = btn.closest('tr');
+
+                Swal.fire({
+                    title: 'Confirm Check-In',
+                    text: 'Select Gate Number',
+                    input: 'select',
+                    inputOptions: {
+                        '1': 'Gate 1 (Main M1)',
+                        '2': 'Gate 2 (Side M2)',
+                    },
+                    inputPlaceholder: 'Select a gate',
+                    showCancelButton: true,
+                    confirmButtonText: 'Check-In',
+                    inputValidator: (value) => {
+                        return new Promise((resolve) => {
+                            if (value) { resolve() }
+                            else { resolve('You need to select a gate') }
+                        })
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        btn.html('<span class="spinner-border spinner-border-sm"></span>').prop('disabled', true);
+                        
+                        var postUrl = '@Url.Action("CheckIn", "Guard")';
+                        
+                        if(postUrl === '#' || postUrl.indexOf('Action') > -1) {
+                            // SIMULATED DEMO MODE
+                            setTimeout(function() {
+                                toastr.success('Checked-In Successfully!');
+                                visitorRow.find('.status-badge').removeClass('bg-warning text-dark').addClass('bg-success').text('Checked-In');
+                                btn.replaceWith('<button class="btn btn-sm btn-danger checkout-btn" data-id="'+visitorId+'">Check-Out</button>');
+                            }, 600);
+                        } else {
+                            // REAL BACKEND AJAX
+                            $.post(postUrl, { visitorId: visitorId, gateId: result.value }, function(res) {
+                                if(res.success){
+                                    toastr.success('Checked-In Successfully!');
+                                    
+                                    // Update row UI
+                                    visitorRow.find('.status-badge').removeClass('bg-warning text-dark').addClass('bg-success').text('Checked-In');
+                                    btn.replaceWith('<button class="btn btn-sm btn-danger checkout-btn" data-id="'+visitorId+'">Check-Out</button>');
+                                } else {
+                                    toastr.error(res.message);
+                                    btn.html('Check-In').prop('disabled', false);
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+
+            // Check-Out Action
+            $('#guardVisitorsTable').on('click', '.checkout-btn', function() {
+                var btn = $(this);
+                var visitorId = btn.data('id');
+                var visitorRow = btn.closest('tr');
+
+                Swal.fire({
+                    title: 'Confirm Check-Out',
+                    text: "Are you sure you want to checkout this visitor?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    confirmButtonText: 'Yes, Check-Out!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        btn.html('<span class="spinner-border spinner-border-sm"></span>').prop('disabled', true);
+
+                        var postUrl = '@Url.Action("CheckOut", "Guard")';
+                        
+                        if(postUrl === '#' || postUrl.indexOf('Action') > -1) {
+                            // SIMULATED DEMO MODE
+                            setTimeout(function() {
+                                toastr.success('Checked-Out Successfully!');
+                                visitorRow.find('.status-badge').removeClass('bg-success').removeClass('bg-warning').addClass('bg-secondary').text('Checked-Out');
+                                btn.remove(); // Remove button completely
+                            }, 600);
+                        } else {
+                            // REAL BACKEND AJAX
+                            $.post(postUrl, { visitorId: visitorId }, function(res) {
+                                if(res.success){
+                                    toastr.success('Checked-Out Successfully!');
+                                    
+                                    visitorRow.find('.status-badge').removeClass('bg-success').addClass('bg-secondary').text('Checked-Out');
+                                    btn.remove(); // Remove button completely
+                                } else {
+                                    toastr.error(res.message);
+                                    btn.html('Check-Out').prop('disabled', false);
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+}

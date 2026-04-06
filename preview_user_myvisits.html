@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Visits - User | VMS</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Toastr -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" />
+    <!-- DataTables -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+    <style>
+        .sidebar-blue {
+            background-color: #0d6efd;
+            min-height: 100vh;
+            color: white;
+        }
+        .sidebar-blue a {
+            color: #e9ecef;
+            text-decoration: none;
+            padding: 10px 15px;
+            display: block;
+        }
+        .sidebar-blue a:hover {
+            background-color: #0b5ed7;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-md-2 d-none d-md-block sidebar-blue shadow">
+                <div class="position-sticky pt-3">
+                    <h4 class="px-3 pb-3 border-bottom text-white">VMS User Panel</h4>
+                    <ul class="nav flex-column mt-3">
+                        <li class="nav-item">
+                            <a class="nav-link" href="preview_user.html">
+                                ➕ Pre-Register Visitor
+                            </a>
+                        </li>
+                        <li class="nav-item mt-2">
+                            <a class="nav-link" href="preview_user_myvisits.html">
+                                📋 My Visits
+                            </a>
+                        </li>
+                        <li class="nav-item mt-5 pt-3 border-top">
+                            <a class="nav-link text-warning" href="preview_admin.html">
+                                🚪 Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="col-md-10 ms-sm-auto px-md-4 py-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                    <h1 class="h2">My Visits</h1>
+                </div>
+
+                <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">📋 My Registered Visits</h5>
+        <a href="preview_user.html" class="btn btn-primary btn-sm">➕ New Pre-Registration</a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle" id="myVisitsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Pass Token</th>
+                        <th>Visitor Name</th>
+                        <th>Company</th>
+                        <th>Scheduled Date</th>
+                        <th>Host</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong class="text-primary">VMS-10492</strong></td>
+                        <td>Alice Cooper</td>
+                        <td>Tech Solutions</td>
+                        <td>Today, 2:30 PM</td>
+                        <td>Dr. Smith</td>
+                        <td><span class="badge bg-warning text-dark">Pending</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary view-pass-btn" data-token="VMS-10492" data-name="Alice Cooper">View Pass</button>
+                            <button class="btn btn-sm btn-outline-danger cancel-btn">Cancel</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong class="text-primary">VMS-10488</strong></td>
+                        <td>Bob Marley</td>
+                        <td>Musicians Inc</td>
+                        <td>Sep 23, 10:00 AM</td>
+                        <td>Jane Doe</td>
+                        <td><span class="badge bg-success">Checked In</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary view-pass-btn" data-token="VMS-10488" data-name="Bob Marley">View Pass</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong class="text-primary">VMS-10476</strong></td>
+                        <td>Charlie Brown</td>
+                        <td>Snoopy PR</td>
+                        <td>Sep 20, 11:00 AM</td>
+                        <td>Dr. Smith</td>
+                        <td><span class="badge bg-secondary">Checked Out</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary view-pass-btn" data-token="VMS-10476" data-name="Charlie Brown">View Pass</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<!-- Pass Modal -->
+<div class="modal fade" id="passModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">🎫 Visitor Pass</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="border rounded p-4 bg-light">
+                    <h6 class="text-muted mb-1">VISITOR MANAGEMENT SYSTEM</h6>
+                    <hr />
+                    <h3 class="text-primary fw-bold" id="modal-token">VMS-10492</h3>
+                    <p class="mb-1"><strong>Name:</strong> <span id="modal-name"></span></p>
+                    <p class="mb-1"><strong>Date:</strong> Today</p>
+                    <p class="mb-1"><strong>Valid for:</strong> 1 Day</p>
+                    <div class="bg-white border rounded mt-3 p-2">
+                        <small class="text-muted">Show this token to the guard at the entrance gate.</small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <button class="btn btn-primary" onclick="window.print()">🖨️ Print Pass</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#myVisitsTable').DataTable({ "order": [[3, "desc"]], "pageLength": 10 });
+            $(document).on('click', '.view-pass-btn', function() {
+                var token = $(this).data('token');
+                var name = $(this).data('name');
+                $('#modal-token').text(token);
+                $('#modal-name').text(name);
+                new bootstrap.Modal(document.getElementById('passModal')).show();
+            });
+            $(document).on('click', '.cancel-btn', function() {
+                var row = $(this).closest('tr');
+                Swal.fire({
+                    title: 'Cancel Visit?',
+                    text: 'This will cancel the visitor registration.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    confirmButtonText: 'Yes, Cancel It!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        row.fadeOut(400, function() { $(this).remove(); });
+                        toastr.success('Visit registration cancelled.');
+                    }
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>

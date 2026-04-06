@@ -1,0 +1,192 @@
+@model VMS.Models.VisitorModel
+
+@{
+    ViewBag.Title = "Pre-Register Visitor";
+    Layout = "~/Views/Shared/_Layout_User.cshtml";
+}
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+        }
+
+        @using (Html.BeginForm("PreRegister", "User", FormMethod.Post, new { enctype = "multipart/form-data", id="registerForm" }))
+        {
+            @Html.AntiForgeryToken()
+
+            <div class="row">
+                <!-- Left Column -->
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Full Name <span class="text-danger">*</span></label>
+                    @Html.TextBoxFor(m => m.FullName, new { @class = "form-control", required="required" })
+                    @Html.ValidationMessageFor(m => m.FullName, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Mobile Number <span class="text-danger">*</span></label>
+                    @Html.TextBoxFor(m => m.Mobile, new { @class = "form-control", required="required", pattern="\\d{10}", title="10 digit mobile" })
+                    @Html.ValidationMessageFor(m => m.Mobile, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Email Address</label>
+                    @Html.TextBoxFor(m => m.Email, new { @class = "form-control", type="email" })
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Company Name</label>
+                    @Html.TextBoxFor(m => m.CompanyName, new { @class = "form-control" })
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Expected Date & Time <span class="text-danger">*</span></label>
+                    @Html.TextBoxFor(m => m.ExpectedDateTime, new { @class = "form-control", type="datetime-local", required="required" })
+                    @Html.ValidationMessageFor(m => m.ExpectedDateTime, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Purpose <span class="text-danger">*</span></label>
+                    @Html.TextBoxFor(m => m.Purpose, new { @class = "form-control", required="required" })
+                </div>
+
+                <!-- Replace with actual dropdowns populated from Master data -->
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Host Employee ID <span class="text-danger">*</span></label>
+                    @Html.TextBoxFor(m => m.HostID, new { @class = "form-control", type="number", required="required" })
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Department ID <span class="text-danger">*</span></label>
+                    @Html.TextBoxFor(m => m.DeptID, new { @class = "form-control", type="number", required="required" })
+                </div>
+            </div>
+
+            <hr />
+            <h5 class="mb-3">Identification & Photos</h5>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">ID Proof Type <span class="text-danger">*</span></label>
+                    <select name="IDProofTypeID" class="form-select" required>
+                        <option value="">Select ID Proof...</option>
+                        <option value="1">Aadhar Card</option>
+                        <option value="2">Driving License</option>
+                        <option value="3">Voter ID</option>
+                        <option value="4">Passport</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">ID Proof Number <span class="text-danger">*</span></label>
+                    @Html.TextBoxFor(m => m.IDProofNumber, new { @class = "form-control", required="required" })
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Upload Photo (Selfie) <span class="text-danger">*</span></label>
+                    <input type="file" name="PhotoUpload" class="form-control" accept=".jpg,.jpeg,.png" required id="photoInput" />
+                    <small class="text-muted">JPG/PNG, Max 2MB</small>
+                    <div class="mt-2">
+                        <img id="photoPreview" src="" class="img-thumbnail" style="display:none; max-height:150px;"/>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Upload ID Proof Document <span class="text-danger">*</span></label>
+                    <input type="file" name="IDProofUpload" class="form-control" accept=".jpg,.jpeg,.png,.pdf" required id="idInput" />
+                    <small class="text-muted">JPG/PNG/PDF, Max 5MB</small>
+                    <div class="mt-2">
+                         <img id="idPreview" src="" class="img-thumbnail" style="display:none; max-height:150px;"/>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary px-5 py-2 mt-3" id="submitBtn">Generate Visit Token</button>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    
+    <script>
+        $(document).ready(function () {
+            // FileReader API for Photo
+            $('#photoInput').change(function(){
+                var file = this.files[0];
+                if(file){
+                    if(file.size > 2 * 1024 * 1024){
+                        toastr.error('Photo size must be less than 2MB');
+                        $(this).val('');
+                        $('#photoPreview').hide();
+                        return;
+                    }
+                    var reader = new FileReader();
+                    reader.onload = function(e){
+                        $('#photoPreview').attr('src', e.target.result).show();
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // FileReader API for ID Proof (Image preview only)
+            $('#idInput').change(function(){
+                var file = this.files[0];
+                if(file){
+                    if(file.size > 5 * 1024 * 1024){
+                        toastr.error('ID Proof size must be less than 5MB');
+                        $(this).val('');
+                        $('#idPreview').hide();
+                        return;
+                    }
+                    if(file.type.startsWith('image/')){
+                        var reader = new FileReader();
+                        reader.onload = function(e){
+                            $('#idPreview').attr('src', e.target.result).show();
+                        }
+                        reader.readAsDataURL(file);
+                    } else {
+                        $('#idPreview').hide(); // Dont show preview for PDF
+                    }
+                }
+            });
+
+            // Loading state
+            $('#registerForm').submit(function(e){
+                if($(this).valid() || document.location.protocol === 'file:'){
+                    
+                    var formAction = $(this).attr('action') || '';
+                    if (!formAction || formAction === '#' || document.location.protocol === 'file:') {
+                        // SIMULATE SUCCESS FOR STATIC DEMO MODE
+                        e.preventDefault();
+                        $('#submitBtn').html('<span class="spinner-border spinner-border-sm"></span> Processing...').prop('disabled', true);
+                        
+                        setTimeout(function() {
+                            // Generate Fake token
+                            var token = "VMS-" + Math.floor(Math.random() * 90000) + 10000;
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Registration Successful!',
+                                text: 'Your generated token is: ' + token,
+                                confirmButtonText: 'View Pass'
+                            }).then((result) => {
+                                $('#submitBtn').html('Generate Visit Token').prop('disabled', false);
+                                $('#registerForm')[0].reset();
+                                $('#photoPreview').hide();
+                                $('#idPreview').hide();
+                            });
+                        }, 1200);
+                        
+                    } else {
+                        // REAL MVC SUBMISSION
+                        $('#submitBtn').html('<span class="spinner-border spinner-border-sm"></span> Processing...').prop('disabled', true);
+                    }
+                }
+            });
+        });
+    </script>
+}
