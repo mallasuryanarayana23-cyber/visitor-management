@@ -17,6 +17,9 @@ builder.Services.AddSession(options => {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
 });
 
+// Register SQLite Helper for the demo module
+builder.Services.AddSingleton<VMS.DAL.SqliteDBHelper>();
+
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options => {
         options.LoginPath = "/Account/Login";
@@ -33,6 +36,13 @@ app.UseSession();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}/{id?}");
+
+// Ensure the Directory exists on startup (Crucial for Docker/Render SQLite volumes)
+var dbDirectory = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Data");
+if (!System.IO.Directory.Exists(dbDirectory))
+{
+    System.IO.Directory.CreateDirectory(dbDirectory);
+}
 
 app.Run();
 
