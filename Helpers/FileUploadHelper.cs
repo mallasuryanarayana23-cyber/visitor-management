@@ -15,13 +15,13 @@ namespace VMS.Helpers
                 throw new Exception("No file selected for upload.");
 
             // Get configurations
-            string uploadServerPath = ConfigurationManager.AppSettings["UploadServerPath"];
-            string uploadBaseUrl = ConfigurationManager.AppSettings["UploadBaseUrl"];
+            string uploadServerPath = System.Configuration.ConfigurationManager.AppSettings["UploadServerPath"];
+            string uploadBaseUrl = System.Configuration.ConfigurationManager.AppSettings["UploadBaseUrl"];
             
             // Validate Max Size
             int maxSizeMB = uploadType == "Photo" ? 
-                Convert.ToInt32(ConfigurationManager.AppSettings["MaxPhotoSizeMB"]) : 
-                Convert.ToInt32(ConfigurationManager.AppSettings["MaxDocSizeMB"]);
+                Convert.ToInt32(System.Configuration.ConfigurationManager.AppSettings["MaxPhotoSizeMB"]) : 
+                Convert.ToInt32(System.Configuration.ConfigurationManager.AppSettings["MaxDocSizeMB"]);
                 
             if (file.Length > (maxSizeMB * 1024 * 1024))
                 throw new Exception($"{uploadType} must not exceed {maxSizeMB} MB.");
@@ -29,8 +29,8 @@ namespace VMS.Helpers
             // Validate Extensions
             string extension = Path.GetExtension(file.FileName).ToLower();
             string allowedExts = uploadType == "Photo" ? 
-                ConfigurationManager.AppSettings["AllowedImageExt"] : 
-                ConfigurationManager.AppSettings["AllowedDocExt"];
+                System.Configuration.ConfigurationManager.AppSettings["AllowedImageExt"] : 
+                System.Configuration.ConfigurationManager.AppSettings["AllowedDocExt"];
 
             if (!allowedExts.Split(',').Contains(extension))
                 throw new Exception($"Invalid file extension for {uploadType}. Allowed: {allowedExts}");

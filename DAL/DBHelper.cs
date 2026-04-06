@@ -9,7 +9,7 @@ namespace VMS.DAL
     {
         public static string GetConnectionString()
         {
-            return ConfigurationManager.ConnectionStrings["OracleVMS"].ConnectionString;
+            return System.Configuration.ConfigurationManager.ConnectionStrings["OracleVMS"].ConnectionString;
         }
 
         public static OracleConnection GetConnection()
