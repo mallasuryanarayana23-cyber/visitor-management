@@ -1,7 +1,7 @@
 using System;
 using System.Configuration;
 using System.Data;
-using Microsoft.Data.Sqlite;
+using Npgsql;
 
 namespace VMS.DAL
 {
@@ -12,63 +12,56 @@ namespace VMS.DAL
             return AppConfig.Configuration.GetConnectionString("DefaultConnection");
         }
 
-        public static SqliteConnection GetConnection()
+        public static NpgsqlConnection GetConnection()
         {
-            return new SqliteConnection(GetConnectionString());
+            return new NpgsqlConnection(GetConnectionString());
         }
 
-        public static DataTable ExecuteQuery(string cmdText, SqliteParameter[] parameters = null, CommandType cmdType = CommandType.Text)
+        public static DataTable ExecuteQuery(string cmdText, NpgsqlParameter[] parameters = null, CommandType cmdType = CommandType.Text)
         {
-            using (SqliteConnection conn = GetConnection())
+            using (NpgsqlConnection conn = GetConnection())
             {
-                using (SqliteCommand cmd = new SqliteCommand(cmdText, conn))
+                using (NpgsqlCommand cmd = new NpgsqlCommand(cmdText, conn))
                 {
                     cmd.CommandType = cmdType;
                     if (parameters != null)
-                    {
                         cmd.Parameters.AddRange(parameters);
-                    }
 
-                    conn.Open();
-                    using (var reader = cmd.ExecuteReader())
+                    using (NpgsqlDataAdapter da = new NpgsqlDataAdapter(cmd))
                     {
                         DataTable dt = new DataTable();
-                        dt.Load(reader);
+                        da.Fill(dt);
                         return dt;
                     }
                 }
             }
         }
 
-        public static int ExecuteNonQuery(string cmdText, SqliteParameter[] parameters = null, CommandType cmdType = CommandType.Text)
+        public static int ExecuteNonQuery(string cmdText, NpgsqlParameter[] parameters = null, CommandType cmdType = CommandType.Text)
         {
-            using (SqliteConnection conn = GetConnection())
+            using (NpgsqlConnection conn = GetConnection())
             {
-                using (SqliteCommand cmd = new SqliteCommand(cmdText, conn))
+                using (NpgsqlCommand cmd = new NpgsqlCommand(cmdText, conn))
                 {
                     cmd.CommandType = cmdType;
                     if (parameters != null)
-                    {
                         cmd.Parameters.AddRange(parameters);
-                    }
 
                     conn.Open();
                     return cmd.ExecuteNonQuery();
                 }
             }
         }
-        
-         public static void ExecuteNonQueryWithOutParams(string cmdText, SqliteParameter[] parameters, CommandType cmdType = CommandType.Text)
+
+        public static void ExecuteNonQueryWithOutParams(string cmdText, NpgsqlParameter[] parameters, CommandType cmdType = CommandType.Text)
         {
-            using (SqliteConnection conn = GetConnection())
+            using (NpgsqlConnection conn = GetConnection())
             {
-                using (SqliteCommand cmd = new SqliteCommand(cmdText, conn))
+                using (NpgsqlCommand cmd = new NpgsqlCommand(cmdText, conn))
                 {
                     cmd.CommandType = cmdType;
                     if (parameters != null)
-                    {
                         cmd.Parameters.AddRange(parameters);
-                    }
 
                     conn.Open();
                     cmd.ExecuteNonQuery();

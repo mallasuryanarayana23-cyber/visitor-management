@@ -1,6 +1,6 @@
 using System;
 using System.Data;
-using Microsoft.Data.Sqlite;
+using Npgsql;
 using VMS.Models;
 using System.Collections.Generic;
 
@@ -22,32 +22,31 @@ namespace VMS.DAL
             string dateStr = DateTime.Now.ToString("yyyyMMdd");
             string tokenPrefix = $"VMS-{dateStr}-";
 
-            SqliteParameter[] parameters = {
-                new SqliteParameter("@p_FULL_NAME", visitor.FullName),
-                new SqliteParameter("@p_MOBILE", visitor.Mobile),
-                new SqliteParameter("@p_EMAIL", (object)visitor.Email ?? DBNull.Value),
-                new SqliteParameter("@p_COMPANY_NAME", (object)visitor.CompanyName ?? DBNull.Value),
-                new SqliteParameter("@p_PURPOSE", visitor.Purpose),
-                new SqliteParameter("@p_HOST_ID", visitor.HostID),
-                new SqliteParameter("@p_DEPT_ID", visitor.DeptID),
-                new SqliteParameter("@p_EXPECTED_DATETIME", visitor.ExpectedDateTime),
-                new SqliteParameter("@p_IDPROOF_TYPE_ID", visitor.IDProofTypeID),
-                new SqliteParameter("@p_IDPROOF_NUMBER", visitor.IDProofNumber),
-                new SqliteParameter("@p_REGISTERED_BY", visitor.RegisteredBy)
+            NpgsqlParameter[] parameters = {
+                new NpgsqlParameter("@p_FULL_NAME", visitor.FullName),
+                new NpgsqlParameter("@p_MOBILE", visitor.Mobile),
+                new NpgsqlParameter("@p_EMAIL", (object)visitor.Email ?? DBNull.Value),
+                new NpgsqlParameter("@p_COMPANY_NAME", (object)visitor.CompanyName ?? DBNull.Value),
+                new NpgsqlParameter("@p_PURPOSE", visitor.Purpose),
+                new NpgsqlParameter("@p_HOST_ID", visitor.HostID),
+                new NpgsqlParameter("@p_DEPT_ID", visitor.DeptID),
+                new NpgsqlParameter("@p_EXPECTED_DATETIME", visitor.ExpectedDateTime),
+                new NpgsqlParameter("@p_IDPROOF_TYPE_ID", visitor.IDProofTypeID),
+                new NpgsqlParameter("@p_IDPROOF_NUMBER", visitor.IDProofNumber),
+                new NpgsqlParameter("@p_REGISTERED_BY", visitor.RegisteredBy)
             };
 
-            using (SqliteConnection conn = DBHelper.GetConnection())
+            using (NpgsqlConnection conn = DBHelper.GetConnection())
             {
                 conn.Open();
-                
-                // Get next sequence value for token manually simulating Oracle format easily 
-                using (SqliteCommand seqCmd = new SqliteCommand("INSERT INTO seq_vms_visitors(id) VALUES(null); SELECT last_insert_rowid();", conn))
+
+                using (NpgsqlCommand seqCmd = new NpgsqlCommand("SELECT nextval('seq_vms_visitors')", conn))
                 {
                     long nextVal = (long)seqCmd.ExecuteScalar();
                     newToken = tokenPrefix + nextVal.ToString("D4");
                 }
 
-                using (SqliteCommand cmd = new SqliteCommand(query, conn))
+                using (NpgsqlCommand cmd = new NpgsqlCommand(query, conn))
                 {
                     cmd.Parameters.AddRange(parameters);
                     cmd.Parameters.AddWithValue("@p_TOKEN", newToken);
@@ -63,10 +62,10 @@ namespace VMS.DAL
                 INSERT INTO VMS_CHECKIN_LOG (VISITOR_ID, GATE_ID, GUARD_ID, CHECKIN_TIME) 
                 VALUES (@p_VISITOR_ID, @p_GATE_ID, @p_GUARD_ID, CURRENT_TIMESTAMP);";
 
-            SqliteParameter[] parameters = {
-                new SqliteParameter("@p_VISITOR_ID", visitorId),
-                new SqliteParameter("@p_GATE_ID", gateId),
-                new SqliteParameter("@p_GUARD_ID", guardId)
+            NpgsqlParameter[] parameters = {
+                new NpgsqlParameter("@p_VISITOR_ID", visitorId),
+                new NpgsqlParameter("@p_GATE_ID", gateId),
+                new NpgsqlParameter("@p_GUARD_ID", guardId)
             };
 
             DBHelper.ExecuteNonQuery(query, parameters);
@@ -83,12 +82,12 @@ namespace VMS.DAL
                 )
                 UPDATE VMS_CHECKIN_LOG 
                 SET CHECKOUT_TIME = CURRENT_TIMESTAMP, 
-                    DURATION_MINUTES = CAST(ROUND((julianday(CURRENT_TIMESTAMP) - julianday(CHECKIN_TIME)) * 24 * 60) AS INTEGER)
+                    DURATION_MINUTES = EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - CHECKIN_TIME)) / 60
                 WHERE LOG_ID = (SELECT LOG_ID FROM LatestCheckin);
             ";
 
-            SqliteParameter[] parameters = {
-                new SqliteParameter("@p_VISITOR_ID", visitorId)
+            NpgsqlParameter[] parameters = {
+                new NpgsqlParameter("@p_VISITOR_ID", visitorId)
             };
 
             DBHelper.ExecuteNonQuery(query, parameters);
@@ -96,14 +95,14 @@ namespace VMS.DAL
 
         public DashboardModel GetDashboardCounts()
         {
-            using (SqliteConnection conn = DBHelper.GetConnection())
+            using (NpgsqlConnection conn = DBHelper.GetConnection())
             {
                 conn.Open();
-                long todayExpected = (long)new SqliteCommand("SELECT COUNT(*) FROM VMS_VISITORS WHERE DATE(EXPECTED_DATETIME) = CURRENT_DATE", conn).ExecuteScalar();
-                long checkedIn = (long)new SqliteCommand("SELECT COUNT(*) FROM VMS_VISITORS WHERE STATUS = 'Checked-In'", conn).ExecuteScalar();
-                long checkedOut = (long)new SqliteCommand("SELECT COUNT(*) FROM VMS_VISITORS WHERE DATE(EXPECTED_DATETIME) = CURRENT_DATE AND STATUS = 'Checked-Out'", conn).ExecuteScalar();
-                long pending = (long)new SqliteCommand("SELECT COUNT(*) FROM VMS_VISITORS WHERE STATUS = 'Pending'", conn).ExecuteScalar();
-                long monthRegistered = (long)new SqliteCommand("SELECT COUNT(*) FROM VMS_VISITORS WHERE strftime('%m', CREATED_DATE) = strftime('%m', 'now') AND strftime('%Y', CREATED_DATE) = strftime('%Y', 'now')", conn).ExecuteScalar();
+                long todayExpected = (long)new NpgsqlCommand("SELECT COUNT(*) FROM VMS_VISITORS WHERE DATE(EXPECTED_DATETIME) = CURRENT_DATE", conn).ExecuteScalar();
+                long checkedIn = (long)new NpgsqlCommand("SELECT COUNT(*) FROM VMS_VISITORS WHERE STATUS = 'Checked-In'", conn).ExecuteScalar();
+                long checkedOut = (long)new NpgsqlCommand("SELECT COUNT(*) FROM VMS_VISITORS WHERE DATE(EXPECTED_DATETIME) = CURRENT_DATE AND STATUS = 'Checked-Out'", conn).ExecuteScalar();
+                long pending = (long)new NpgsqlCommand("SELECT COUNT(*) FROM VMS_VISITORS WHERE STATUS = 'Pending'", conn).ExecuteScalar();
+                long monthRegistered = (long)new NpgsqlCommand("SELECT COUNT(*) FROM VMS_VISITORS WHERE EXTRACT(MONTH FROM CREATED_DATE) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM CREATED_DATE) = EXTRACT(YEAR FROM CURRENT_DATE)", conn).ExecuteScalar();
 
                 return new DashboardModel
                 {
@@ -124,17 +123,16 @@ namespace VMS.DAL
                   AND DATE(EXPECTED_DATETIME) <= @p_END_DATE
                   AND (@p_DEPT_ID = 0 OR DEPT_ID = @p_DEPT_ID)";
 
-            SqliteParameter[] parameters = {
-                new SqliteParameter("@p_START_DATE", start.Date),
-                new SqliteParameter("@p_END_DATE", end.Date),
-                new SqliteParameter("@p_DEPT_ID", deptId)
+            NpgsqlParameter[] parameters = {
+                new NpgsqlParameter("@p_START_DATE", start.Date),
+                new NpgsqlParameter("@p_END_DATE", end.Date),
+                new NpgsqlParameter("@p_DEPT_ID", deptId)
             };
 
             DataTable dt = DBHelper.ExecuteQuery(query, parameters);
             return MapToVisitorList(dt);
         }
 
-        // Helper Map Method
         private List<VisitorModel> MapToVisitorList(DataTable dt)
         {
             List<VisitorModel> list = new List<VisitorModel>();
