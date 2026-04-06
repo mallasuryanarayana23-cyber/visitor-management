@@ -5,10 +5,7 @@ using System;
 
 using Microsoft.Extensions.Configuration;
 
-public static class AppConfig
-{
-    public static IConfiguration Configuration { get; set; }
-}
+
 
 var builder = WebApplication.CreateBuilder(args);
 AppConfig.Configuration = builder.Configuration;
@@ -38,3 +35,8 @@ app.MapControllerRoute(
     pattern: "{controller=Account}/{action=Login}/{id?}");
 
 app.Run();
+
+public static class AppConfig
+{
+    public static IConfiguration Configuration { get; set; }
+}
