@@ -2,7 +2,7 @@ using System;
 using System.Data;
 using System.Security.Cryptography;
 using System.Text;
-using Oracle.ManagedDataAccess.Client;
+using Npgsql;
 using VMS.Models;
 
 namespace VMS.DAL
@@ -13,20 +13,17 @@ namespace VMS.DAL
         {
             string passwordHash = ComputeSHA256Hash(password);
             
-            using (OracleConnection conn = DBHelper.GetConnection())
+            using (NpgsqlConnection conn = DBHelper.GetConnection())
             {
-                using (OracleCommand cmd = new OracleCommand("SP_AUTHENTICATE_USER", conn))
+                string query = "SELECT USER_ID, USERNAME, FULL_NAME, ROLE, IS_ACTIVE FROM VMS_USERS WHERE USERNAME = @p_USERNAME AND PASSWORD_HASH = @p_PASSWORD_HASH;";
+                using (NpgsqlCommand cmd = new NpgsqlCommand(query, conn))
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.CommandType = CommandType.Text;
 
-                    cmd.Parameters.Add("p_USERNAME", OracleDbType.Varchar2).Value = username;
-                    cmd.Parameters.Add("p_PASSWORD_HASH", OracleDbType.Varchar2).Value = passwordHash;
-                    
-                    OracleParameter cursorParam = new OracleParameter("p_RECORDSET", OracleDbType.RefCursor);
-                    cursorParam.Direction = ParameterDirection.Output;
-                    cmd.Parameters.Add(cursorParam);
+                    cmd.Parameters.AddWithValue("@p_USERNAME", username);
+                    cmd.Parameters.AddWithValue("@p_PASSWORD_HASH", passwordHash);
 
-                    using (OracleDataAdapter da = new OracleDataAdapter(cmd))
+                    using (NpgsqlDataAdapter da = new NpgsqlDataAdapter(cmd))
                     {
                         DataTable dt = new DataTable();
                         da.Fill(dt);
@@ -55,24 +52,19 @@ namespace VMS.DAL
         {
             string passwordHash = ComputeSHA256Hash(password);
 
-            using (OracleConnection conn = DBHelper.GetConnection())
+            using (NpgsqlConnection conn = DBHelper.GetConnection())
             {
-                using (OracleCommand cmd = new OracleCommand("SP_SET_GUARD_PASSWORD", conn))
+                string sql = @"
+                    UPDATE VMS_USERS SET PASSWORD_HASH = @p_pwd WHERE USERNAME = @p_emp AND ROLE = 'GUARD';
+                ";
+                using (NpgsqlCommand cmd = new NpgsqlCommand(sql, conn))
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-
-                    cmd.Parameters.Add("p_EMP_NO", OracleDbType.Varchar2).Value = empNo;
-                    cmd.Parameters.Add("p_PASSWORD_HASH", OracleDbType.Varchar2).Value = passwordHash;
-
-                    OracleParameter outStatus = new OracleParameter("p_OUT_STATUS", OracleDbType.Int32);
-                    outStatus.Direction = ParameterDirection.Output;
-                    cmd.Parameters.Add(outStatus);
-
+                    cmd.Parameters.AddWithValue("@p_emp", empNo);
+                    cmd.Parameters.AddWithValue("@p_pwd", passwordHash);
+                    
                     conn.Open();
-                    cmd.ExecuteNonQuery();
-
-                    int status = Convert.ToInt32(outStatus.Value.ToString() == "null" ? "0" : outStatus.Value.ToString());
-                    return status == 1; // 1 = success, 0 = guard not found
+                    int affected = cmd.ExecuteNonQuery();
+                    return affected > 0;
                 }
             }
         }
@@ -93,19 +85,18 @@ namespace VMS.DAL
         
         public void LogAudit(int? userId, string actionType, string entityName, int? entityId, string ipAddress, string details)
         {
-            string query = "BEGIN INSERT INTO VMS_AUDIT_LOG (AUDIT_ID, USER_ID, ACTION_TYPE, ENTITY_NAME, ENTITY_ID, IP_ADDRESS, DETAILS) VALUES (SEQ_VMS_AUDIT_LOG.NEXTVAL, :p_user, :p_action, :p_ent_name, :p_ent_id, :p_ip, :p_details); END;";
+            string query = "INSERT INTO VMS_AUDIT_LOG (USER_ID, ACTION_TYPE, ENTITY_NAME, ENTITY_ID, IP_ADDRESS, DETAILS) VALUES (@p_user, @p_action, @p_ent_name, @p_ent_id, @p_ip, @p_details);";
             
-            using (OracleConnection conn = DBHelper.GetConnection())
+            using (NpgsqlConnection conn = DBHelper.GetConnection())
             {
-                using (OracleCommand cmd = new OracleCommand(query, conn))
+                using (NpgsqlCommand cmd = new NpgsqlCommand(query, conn))
                 {
-                    cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.Add("p_user", OracleDbType.Int32).Value = (object)userId ?? DBNull.Value;
-                    cmd.Parameters.Add("p_action", OracleDbType.Varchar2).Value = actionType;
-                    cmd.Parameters.Add("p_ent_name", OracleDbType.Varchar2).Value = (object)entityName ?? DBNull.Value;
-                    cmd.Parameters.Add("p_ent_id", OracleDbType.Int32).Value = (object)entityId ?? DBNull.Value;
-                    cmd.Parameters.Add("p_ip", OracleDbType.Varchar2).Value = (object)ipAddress ?? DBNull.Value;
-                    cmd.Parameters.Add("p_details", OracleDbType.Clob).Value = (object)details ?? DBNull.Value;
+                    cmd.Parameters.AddWithValue("@p_user", (object)userId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@p_action", actionType);
+                    cmd.Parameters.AddWithValue("@p_ent_name", (object)entityName ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@p_ent_id", (object)entityId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@p_ip", (object)ipAddress ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@p_details", (object)details ?? DBNull.Value);
 
                     conn.Open();
                     cmd.ExecuteNonQuery();

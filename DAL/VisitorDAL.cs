@@ -1,6 +1,6 @@
 using System;
 using System.Data;
-using Oracle.ManagedDataAccess.Client;
+using Npgsql;
 using VMS.Models;
 using System.Collections.Generic;
 
@@ -10,85 +10,127 @@ namespace VMS.DAL
     {
         public void RegisterVisitor(VisitorModel visitor, out int newVisitorId, out string newToken)
         {
-            OracleParameter pNewVisitorId = new OracleParameter("p_OUT_VISITOR_ID", OracleDbType.Int32) { Direction = ParameterDirection.Output };
-            OracleParameter pNewToken = new OracleParameter("p_OUT_TOKEN", OracleDbType.Varchar2, 50) { Direction = ParameterDirection.Output };
+            string query = @"
+                INSERT INTO VMS_VISITORS (
+                    VISIT_TOKEN, FULL_NAME, MOBILE, EMAIL, COMPANY_NAME, PURPOSE, 
+                    HOST_ID, DEPT_ID, EXPECTED_DATETIME, IDPROOF_TYPE_ID, IDPROOF_NUMBER, REGISTERED_BY
+                ) VALUES (
+                    @p_TOKEN, @p_FULL_NAME, @p_MOBILE, @p_EMAIL, @p_COMPANY_NAME, @p_PURPOSE,
+                    @p_HOST_ID, @p_DEPT_ID, @p_EXPECTED_DATETIME, @p_IDPROOF_TYPE_ID, @p_IDPROOF_NUMBER, @p_REGISTERED_BY
+                ) RETURNING VISITOR_ID;";
 
-            OracleParameter[] parameters = {
-                new OracleParameter("p_FULL_NAME", OracleDbType.Varchar2) { Value = visitor.FullName },
-                new OracleParameter("p_MOBILE", OracleDbType.Varchar2) { Value = visitor.Mobile },
-                new OracleParameter("p_EMAIL", OracleDbType.Varchar2) { Value = (object)visitor.Email ?? DBNull.Value },
-                new OracleParameter("p_COMPANY_NAME", OracleDbType.Varchar2) { Value = (object)visitor.CompanyName ?? DBNull.Value },
-                new OracleParameter("p_PURPOSE", OracleDbType.Varchar2) { Value = visitor.Purpose },
-                new OracleParameter("p_HOST_ID", OracleDbType.Int32) { Value = visitor.HostID },
-                new OracleParameter("p_DEPT_ID", OracleDbType.Int32) { Value = visitor.DeptID },
-                new OracleParameter("p_EXPECTED_DATETIME", OracleDbType.TimeStamp) { Value = visitor.ExpectedDateTime },
-                new OracleParameter("p_IDPROOF_TYPE_ID", OracleDbType.Int32) { Value = visitor.IDProofTypeID },
-                new OracleParameter("p_IDPROOF_NUMBER", OracleDbType.Varchar2) { Value = visitor.IDProofNumber },
-                new OracleParameter("p_REGISTERED_BY", OracleDbType.Int32) { Value = visitor.RegisteredBy },
-                pNewVisitorId,
-                pNewToken
+            string dateStr = DateTime.Now.ToString("yyyyMMdd");
+            string tokenPrefix = $"VMS-{dateStr}-";
+
+            NpgsqlParameter[] parameters = {
+                new NpgsqlParameter("@p_FULL_NAME", visitor.FullName),
+                new NpgsqlParameter("@p_MOBILE", visitor.Mobile),
+                new NpgsqlParameter("@p_EMAIL", (object)visitor.Email ?? DBNull.Value),
+                new NpgsqlParameter("@p_COMPANY_NAME", (object)visitor.CompanyName ?? DBNull.Value),
+                new NpgsqlParameter("@p_PURPOSE", visitor.Purpose),
+                new NpgsqlParameter("@p_HOST_ID", visitor.HostID),
+                new NpgsqlParameter("@p_DEPT_ID", visitor.DeptID),
+                new NpgsqlParameter("@p_EXPECTED_DATETIME", visitor.ExpectedDateTime),
+                new NpgsqlParameter("@p_IDPROOF_TYPE_ID", visitor.IDProofTypeID),
+                new NpgsqlParameter("@p_IDPROOF_NUMBER", visitor.IDProofNumber),
+                new NpgsqlParameter("@p_REGISTERED_BY", visitor.RegisteredBy)
             };
 
-            DBHelper.ExecuteNonQueryWithOutParams("SP_REGISTER_VISITOR", parameters);
+            using (NpgsqlConnection conn = DBHelper.GetConnection())
+            {
+                conn.Open();
+                
+                // Get next sequence value for token manually to simulate Oracle format easily 
+                using (NpgsqlCommand seqCmd = new NpgsqlCommand("SELECT nextval('seq_vms_visitors')", conn))
+                {
+                    long nextVal = (long)seqCmd.ExecuteScalar();
+                    newToken = tokenPrefix + nextVal.ToString("D4");
+                }
 
-            newVisitorId = Convert.ToInt32(pNewVisitorId.Value.ToString());
-            newToken = pNewToken.Value.ToString();
+                using (NpgsqlCommand cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddRange(parameters);
+                    cmd.Parameters.AddWithValue("@p_TOKEN", newToken);
+                    newVisitorId = Convert.ToInt32(cmd.ExecuteScalar());
+                }
+            }
         }
 
         public void CheckInVisitor(int visitorId, int gateId, int guardId)
         {
-            OracleParameter[] parameters = {
-                new OracleParameter("p_VISITOR_ID", OracleDbType.Int32) { Value = visitorId },
-                new OracleParameter("p_GATE_ID", OracleDbType.Int32) { Value = gateId },
-                new OracleParameter("p_GUARD_ID", OracleDbType.Int32) { Value = guardId }
+            string query = @"
+                UPDATE VMS_VISITORS SET STATUS = 'Checked-In' WHERE VISITOR_ID = @p_VISITOR_ID;
+                INSERT INTO VMS_CHECKIN_LOG (VISITOR_ID, GATE_ID, GUARD_ID, CHECKIN_TIME) 
+                VALUES (@p_VISITOR_ID, @p_GATE_ID, @p_GUARD_ID, CURRENT_TIMESTAMP);";
+
+            NpgsqlParameter[] parameters = {
+                new NpgsqlParameter("@p_VISITOR_ID", visitorId),
+                new NpgsqlParameter("@p_GATE_ID", gateId),
+                new NpgsqlParameter("@p_GUARD_ID", guardId)
             };
 
-            DBHelper.ExecuteNonQuery("SP_CHECKIN_VISITOR", parameters);
+            DBHelper.ExecuteNonQuery(query, parameters);
         }
 
         public void CheckOutVisitor(int visitorId)
         {
-            OracleParameter[] parameters = {
-                new OracleParameter("p_VISITOR_ID", OracleDbType.Int32) { Value = visitorId }
+            string query = @"
+                UPDATE VMS_VISITORS SET STATUS = 'Checked-Out' WHERE VISITOR_ID = @p_VISITOR_ID;
+                WITH LatestCheckin AS (
+                    SELECT LOG_ID FROM VMS_CHECKIN_LOG 
+                    WHERE VISITOR_ID = @p_VISITOR_ID AND CHECKOUT_TIME IS NULL 
+                    ORDER BY CHECKIN_TIME DESC LIMIT 1
+                )
+                UPDATE VMS_CHECKIN_LOG 
+                SET CHECKOUT_TIME = CURRENT_TIMESTAMP, 
+                    DURATION_MINUTES = EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - CHECKIN_TIME)) / 60
+                WHERE LOG_ID = (SELECT LOG_ID FROM LatestCheckin);
+            ";
+
+            NpgsqlParameter[] parameters = {
+                new NpgsqlParameter("@p_VISITOR_ID", visitorId)
             };
 
-            DBHelper.ExecuteNonQuery("SP_CHECKOUT_VISITOR", parameters);
+            DBHelper.ExecuteNonQuery(query, parameters);
         }
 
         public DashboardModel GetDashboardCounts()
         {
-            OracleParameter pExpected = new OracleParameter("p_TODAY_EXPECTED", OracleDbType.Int32) { Direction = ParameterDirection.Output };
-            OracleParameter pIn = new OracleParameter("p_CHECKED_IN", OracleDbType.Int32) { Direction = ParameterDirection.Output };
-            OracleParameter pOut = new OracleParameter("p_CHECKED_OUT", OracleDbType.Int32) { Direction = ParameterDirection.Output };
-            OracleParameter pPending = new OracleParameter("p_PENDING", OracleDbType.Int32) { Direction = ParameterDirection.Output };
-            OracleParameter pMonth = new OracleParameter("p_MONTH_REGISTERED", OracleDbType.Int32) { Direction = ParameterDirection.Output };
-
-            OracleParameter[] parameters = { pExpected, pIn, pOut, pPending, pMonth };
-
-            DBHelper.ExecuteNonQueryWithOutParams("SP_GET_DASHBOARD_COUNTS", parameters);
-
-            return new DashboardModel
+            using (NpgsqlConnection conn = DBHelper.GetConnection())
             {
-                TodayExpected = Convert.ToInt32(pExpected.Value.ToString()),
-                CheckedIn = Convert.ToInt32(pIn.Value.ToString()),
-                CheckedOut = Convert.ToInt32(pOut.Value.ToString()),
-                PendingApprovals = Convert.ToInt32(pPending.Value.ToString()),
-                TotalRegisteredThisMonth = Convert.ToInt32(pMonth.Value.ToString())
-            };
+                conn.Open();
+                long todayExpected = (long)new NpgsqlCommand("SELECT COUNT(*) FROM VMS_VISITORS WHERE DATE(EXPECTED_DATETIME) = CURRENT_DATE", conn).ExecuteScalar();
+                long checkedIn = (long)new NpgsqlCommand("SELECT COUNT(*) FROM VMS_VISITORS WHERE STATUS = 'Checked-In'", conn).ExecuteScalar();
+                long checkedOut = (long)new NpgsqlCommand("SELECT COUNT(*) FROM VMS_VISITORS WHERE DATE(EXPECTED_DATETIME) = CURRENT_DATE AND STATUS = 'Checked-Out'", conn).ExecuteScalar();
+                long pending = (long)new NpgsqlCommand("SELECT COUNT(*) FROM VMS_VISITORS WHERE STATUS = 'Pending'", conn).ExecuteScalar();
+                long monthRegistered = (long)new NpgsqlCommand("SELECT COUNT(*) FROM VMS_VISITORS WHERE EXTRACT(MONTH FROM CREATED_DATE) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM CREATED_DATE) = EXTRACT(YEAR FROM CURRENT_DATE)", conn).ExecuteScalar();
+
+                return new DashboardModel
+                {
+                    TodayExpected = Convert.ToInt32(todayExpected),
+                    CheckedIn = Convert.ToInt32(checkedIn),
+                    CheckedOut = Convert.ToInt32(checkedOut),
+                    PendingApprovals = Convert.ToInt32(pending),
+                    TotalRegisteredThisMonth = Convert.ToInt32(monthRegistered)
+                };
+            }
         }
 
         public List<VisitorModel> GetVisitorReport(DateTime start, DateTime end, int deptId)
         {
-            OracleParameter pCursor = new OracleParameter("p_RECORDSET", OracleDbType.RefCursor) { Direction = ParameterDirection.Output };
-            
-            OracleParameter[] parameters = {
-                new OracleParameter("p_START_DATE", OracleDbType.Date) { Value = start },
-                new OracleParameter("p_END_DATE", OracleDbType.Date) { Value = end },
-                new OracleParameter("p_DEPT_ID", OracleDbType.Int32) { Value = deptId },
-                pCursor
+            string query = @"
+                SELECT * FROM VW_VISITOR_FULL_DETAIL 
+                WHERE DATE(EXPECTED_DATETIME) >= @p_START_DATE 
+                  AND DATE(EXPECTED_DATETIME) <= @p_END_DATE
+                  AND (@p_DEPT_ID = 0 OR DEPT_ID = @p_DEPT_ID)";
+
+            NpgsqlParameter[] parameters = {
+                new NpgsqlParameter("@p_START_DATE", start.Date),
+                new NpgsqlParameter("@p_END_DATE", end.Date),
+                new NpgsqlParameter("@p_DEPT_ID", deptId)
             };
 
-            DataTable dt = DBHelper.ExecuteQuery("SP_GET_VISITOR_REPORT", parameters);
+            DataTable dt = DBHelper.ExecuteQuery(query, parameters);
             return MapToVisitorList(dt);
         }
 

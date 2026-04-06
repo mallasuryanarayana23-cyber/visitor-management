@@ -72,7 +72,7 @@ namespace VMS.Controllers
                 }
                 catch (Exception ex)
                 {
-                    ModelState.AddModelError("", "Database Connection Error: Canonical setup requested.");
+                    ModelState.AddModelError("", "Database Connection Error: " + ex.Message);
                 }
             }
             return View(model);

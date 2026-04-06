@@ -1,7 +1,7 @@
 using System;
 using System.Configuration;
 using System.Data;
-using Oracle.ManagedDataAccess.Client;
+using Npgsql;
 
 namespace VMS.DAL
 {
@@ -9,27 +9,27 @@ namespace VMS.DAL
     {
         public static string GetConnectionString()
         {
-            return AppConfig.Configuration.GetConnectionString("OracleVMS");
+            return AppConfig.Configuration.GetConnectionString("DefaultConnection");
         }
 
-        public static OracleConnection GetConnection()
+        public static NpgsqlConnection GetConnection()
         {
-            return new OracleConnection(GetConnectionString());
+            return new NpgsqlConnection(GetConnectionString());
         }
 
-        public static DataTable ExecuteQuery(string procedureName, OracleParameter[] parameters = null)
+        public static DataTable ExecuteQuery(string cmdText, NpgsqlParameter[] parameters = null, CommandType cmdType = CommandType.Text)
         {
-            using (OracleConnection conn = GetConnection())
+            using (NpgsqlConnection conn = GetConnection())
             {
-                using (OracleCommand cmd = new OracleCommand(procedureName, conn))
+                using (NpgsqlCommand cmd = new NpgsqlCommand(cmdText, conn))
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.CommandType = cmdType;
                     if (parameters != null)
                     {
                         cmd.Parameters.AddRange(parameters);
                     }
 
-                    using (OracleDataAdapter da = new OracleDataAdapter(cmd))
+                    using (NpgsqlDataAdapter da = new NpgsqlDataAdapter(cmd))
                     {
                         DataTable dt = new DataTable();
                         da.Fill(dt);
@@ -39,13 +39,13 @@ namespace VMS.DAL
             }
         }
 
-        public static int ExecuteNonQuery(string procedureName, OracleParameter[] parameters = null)
+        public static int ExecuteNonQuery(string cmdText, NpgsqlParameter[] parameters = null, CommandType cmdType = CommandType.Text)
         {
-            using (OracleConnection conn = GetConnection())
+            using (NpgsqlConnection conn = GetConnection())
             {
-                using (OracleCommand cmd = new OracleCommand(procedureName, conn))
+                using (NpgsqlCommand cmd = new NpgsqlCommand(cmdText, conn))
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.CommandType = cmdType;
                     if (parameters != null)
                     {
                         cmd.Parameters.AddRange(parameters);
@@ -57,13 +57,13 @@ namespace VMS.DAL
             }
         }
         
-         public static void ExecuteNonQueryWithOutParams(string procedureName, OracleParameter[] parameters)
+         public static void ExecuteNonQueryWithOutParams(string cmdText, NpgsqlParameter[] parameters, CommandType cmdType = CommandType.Text)
         {
-            using (OracleConnection conn = GetConnection())
+            using (NpgsqlConnection conn = GetConnection())
             {
-                using (OracleCommand cmd = new OracleCommand(procedureName, conn))
+                using (NpgsqlCommand cmd = new NpgsqlCommand(cmdText, conn))
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.CommandType = cmdType;
                     if (parameters != null)
                     {
                         cmd.Parameters.AddRange(parameters);
