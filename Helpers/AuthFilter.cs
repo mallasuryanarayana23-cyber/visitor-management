@@ -1,52 +1,39 @@
 using System;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System.Web.Routing;
+using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Http;
+using System.Linq;
 
 namespace VMS.Helpers
 {
-    public class AuthFilter : AuthorizeAttribute
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+    public class AuthFilter : Attribute, IAuthorizationFilter
     {
         public string AllowedRoles { get; set; }
 
-        protected override bool AuthorizeCore(HttpContextBase httpContext)
+        public void OnAuthorization(AuthorizationFilterContext context)
         {
-            if (!httpContext.User.Identity.IsAuthenticated)
+            if (!context.HttpContext.User.Identity.IsAuthenticated)
             {
-                return false;
+                context.Result = new RedirectToActionResult("Login", "Account", null);
+                return;
             }
 
-            if (httpContext.Session != null && httpContext.HttpContext.Session.GetString("Role"] != null)
+            var role = context.HttpContext.Session.GetString("Role");
+            if (role != null)
             {
-                string userRole = httpContext.HttpContext.Session.GetString("Role"].ToString();
-
                 if (string.IsNullOrEmpty(AllowedRoles))
                 {
-                    return true;
+                    return;
                 }
 
-                // Check against comma-separated allowed roles
-                return AllowedRoles.Contains(userRole);
+                if (AllowedRoles.Contains(role))
+                {
+                    return;
+                }
             }
 
-            return false;
-        }
-
-        protected override void HandleUnauthorizedRequest(AuthorizationContext filterContext)
-        {
-            if (!filterContext.HttpContext.User.Identity.IsAuthenticated)
-            {
-                filterContext.Result = new RedirectToRouteResult(
-                    new RouteValueDictionary(new { controller = "Account", action = "Login" })
-                );
-            }
-            else
-            {
-                // Authenticated, but no permission
-                filterContext.Result = new RedirectToRouteResult(
-                    new RouteValueDictionary(new { controller = "Account", action = "Unauthorized" })
-                );
-            }
+            context.Result = new RedirectToActionResult("Unauthorized", "Account", null);
         }
     }
 }
