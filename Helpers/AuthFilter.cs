@@ -1,6 +1,6 @@
 using System;
-using System.Web;
-using System.Web.Mvc;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using System.Web.Routing;
 
 namespace VMS.Helpers
@@ -16,9 +16,9 @@ namespace VMS.Helpers
                 return false;
             }
 
-            if (httpContext.Session != null && httpContext.Session["Role"] != null)
+            if (httpContext.Session != null && httpContext.HttpContext.Session.GetString("Role"] != null)
             {
-                string userRole = httpContext.Session["Role"].ToString();
+                string userRole = httpContext.HttpContext.Session.GetString("Role"].ToString();
 
                 if (string.IsNullOrEmpty(AllowedRoles))
                 {

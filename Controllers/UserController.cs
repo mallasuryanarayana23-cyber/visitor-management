@@ -1,5 +1,5 @@
 using System;
-using System.Web.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using VMS.Models;
 using VMS.DAL;
 using VMS.Helpers;
@@ -14,7 +14,7 @@ namespace VMS.Controllers
         private UserDAL _userDal = new UserDAL();
 
         [HttpGet]
-        public ActionResult PreRegister()
+        public IActionResult PreRegister()
         {
             // Usually we'd populate dropdowns for Dept and Host here via ViewBag
             return View(new VisitorModel());
@@ -22,14 +22,14 @@ namespace VMS.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult PreRegister(VisitorModel model)
+        public IActionResult PreRegister(VisitorModel model)
         {
             if (ModelState.IsValid)
             {
                 try
                 {
                     // 1. Register Visitor in DB
-                    int loggedInUser = (int)Session["UserID"];
+                    int loggedInUser = (int)HttpContext.Session.GetString("UserID"];
                     model.RegisteredBy = loggedInUser;
                     
                     int newVisitorId;
@@ -52,7 +52,7 @@ namespace VMS.Controllers
                     }
 
                     // 4. Audit Log
-                    _userDal.LogAudit(loggedInUser, "Register Visitor", "VMS_VISITORS", newVisitorId, Request.UserHostAddress, $"Registered visitor token {newToken}");
+                    _userDal.LogAudit(loggedInUser, "Register Visitor", "VMS_VISITORS", newVisitorId, HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown", $"Registered visitor token {newToken}");
 
                     TempData["SuccessMessage"] = $"Registration successful! Token: {newToken}";
                     return RedirectToAction("ViewPass", new { token = newToken });
@@ -67,7 +67,7 @@ namespace VMS.Controllers
         }
 
         [HttpGet]
-        public ActionResult MyVisits()
+        public IActionResult MyVisits()
         {
             // Will fetch from View based on current User
             // Here just rendering view for now
@@ -75,7 +75,7 @@ namespace VMS.Controllers
         }
 
         [HttpGet]
-        public ActionResult ViewPass(string token)
+        public IActionResult ViewPass(string token)
         {
              // Render the Pass view
             ViewBag.Token = token;

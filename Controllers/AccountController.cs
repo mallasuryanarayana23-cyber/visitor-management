@@ -1,6 +1,11 @@
 using System;
-using System.Web.Mvc;
-using System.Web.Security;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
 using VMS.Models;
 using VMS.DAL;
 
@@ -11,19 +16,17 @@ namespace VMS.Controllers
         private UserDAL _userDal = new UserDAL();
 
         [HttpGet]
-        public ActionResult Login()
+        public IIActionResult Login()
         {
-            // FIX: If AuthCookie exists but Session is missing, it causes an infinite redirect loop.
             if (User.Identity.IsAuthenticated)
             {
-                if (Session["Role"] != null)
+                if (HttpContext.Session.GetString("Role") != null)
                 {
                     return RedirectBasedOnRole();
                 }
                 else
                 {
-                    // Session was reset. Sign off the stale cookie.
-                    FormsAuthentication.SignOut();
+                    HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 }
             }
             return View();
@@ -31,7 +34,7 @@ namespace VMS.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Login(LoginViewModel model)
+        public async Task<IIActionResult> Login(LoginViewModel model)
         {
             if (ModelState.IsValid)
             {
@@ -41,15 +44,26 @@ namespace VMS.Controllers
 
                     if (user != null)
                     {
-                        // Forms Auth
-                        FormsAuthentication.SetAuthCookie(user.Username, false);
+                        var claims = new List<Claim>
+                        {
+                            new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
+                            new Claim(ClaimTypes.Name, user.Username),
+                            new Claim(ClaimTypes.Role, user.Role)
+                        };
 
-                        // Session
-                        Session["UserID"] = user.UserID;
-                        Session["UserName"] = user.FullName;
-                        Session["Role"] = user.Role;
+                        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                        var authProperties = new AuthenticationProperties { IsPersistent = false };
 
-                        _userDal.LogAudit(user.UserID, "Login", "VMS_USERS", user.UserID, Request.UserHostAddress, "Successful login");
+                        await HttpContext.SignInAsync(
+                            CookieAuthenticationDefaults.AuthenticationScheme, 
+                            new ClaimsPrincipal(claimsIdentity), 
+                            authProperties);
+
+                        HttpContext.Session.SetInt32("UserID", user.UserID);
+                        HttpContext.Session.SetString("UserName", user.FullName);
+                        HttpContext.Session.SetString("Role", user.Role);
+
+                        _userDal.LogAudit(user.UserID, "Login", "VMS_USERS", user.UserID, HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown", "Successful login");
 
                         return RedirectBasedOnRole();
                     }
@@ -58,45 +72,40 @@ namespace VMS.Controllers
                 }
                 catch (Exception ex)
                 {
-                    // FIX: Catch Database disconnections instead of crashing the app
-                    ModelState.AddModelError("", "Database Connection Error: Cannot verify credentials. Please ensure the Oracle DB is running and connected.");
+                    ModelState.AddModelError("", "Database Connection Error: Canonical setup requested.");
                 }
             }
             return View(model);
         }
 
-        public ActionResult Logout()
+        public async Task<IIActionResult> Logout()
         {
-            try
+            int? userId = HttpContext.Session.GetInt32("UserID");
+            if (userId.HasValue)
             {
-                if (Session["UserID"] != null)
-                {
-                    _userDal.LogAudit((int)Session["UserID"], "Logout", "VMS_USERS", (int)Session["UserID"], Request.UserHostAddress, "User logged out");
-                }
+                _userDal.LogAudit(userId.Value, "Logout", "VMS_USERS", userId.Value, HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown", "User logged out");
             }
-            catch { /* Ignore logging failures during logout */ }
 
-            FormsAuthentication.SignOut();
-            Session.Clear();
-            Session.Abandon();
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            HttpContext.Session.Clear();
             return RedirectToAction("Login");
         }
 
         [HttpGet]
-        public ActionResult Unauthorized()
+        public IIActionResult Unauthorized()
         {
             return View();
         }
 
-        private ActionResult RedirectBasedOnRole()
+        private IIActionResult RedirectBasedOnRole()
         {
-            if (Session["Role"] == null) 
+            var role = HttpContext.Session.GetString("Role");
+            if (string.IsNullOrEmpty(role)) 
             {
-                FormsAuthentication.SignOut();
+                HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 return RedirectToAction("Login");
             }
 
-            string role = Session["Role"].ToString();
             if (role == "ADMIN")
                 return RedirectToAction("Dashboard", "Admin");
             else if (role == "GUARD")

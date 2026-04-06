@@ -1,5 +1,7 @@
 using System;
-using System.Web.Mvc;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Http;
 using VMS.DAL;
 using VMS.Helpers;
 
@@ -12,34 +14,34 @@ namespace VMS.Controllers
         private UserDAL _userDal = new UserDAL();
 
         [HttpGet]
-        public ActionResult Dashboard()
+        public IActionResult Dashboard()
         {
             var stats = _visitorDal.GetDashboardCounts();
             return View(stats);
         }
 
         [HttpGet]
-        public ActionResult TodayList()
+        public IActionResult TodayList()
         {
             // View should load DataTables hitting an API or populated directly
             return View();
         }
 
         [HttpGet]
-        public ActionResult Search(string q)
+        public IActionResult Search(string q)
         {
             ViewBag.Query = q;
             return View();
         }
 
         [HttpPost]
-        public JsonResult CheckIn(int visitorId, int gateId)
+        public IActionResult CheckIn(int visitorId, int gateId)
         {
             try
             {
-                int guardId = (int)Session["UserID"];
+                int guardId = (int)HttpContext.Session.GetString("UserID"];
                 _visitorDal.CheckInVisitor(visitorId, gateId, guardId);
-                _userDal.LogAudit(guardId, "Check-In", "VMS_VISITORS", visitorId, Request.UserHostAddress, $"Gate check-in at gate {gateId}");
+                _userDal.LogAudit(guardId, "Check-In", "VMS_VISITORS", visitorId, HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown", $"Gate check-in at gate {gateId}");
                 return Json(new { success = true });
             }
             catch(Exception ex)
@@ -49,13 +51,13 @@ namespace VMS.Controllers
         }
 
         [HttpPost]
-        public JsonResult CheckOut(int visitorId)
+        public IActionResult CheckOut(int visitorId)
         {
              try
             {
-                int guardId = (int)Session["UserID"];
+                int guardId = (int)HttpContext.Session.GetString("UserID"];
                 _visitorDal.CheckOutVisitor(visitorId);
-                _userDal.LogAudit(guardId, "Check-Out", "VMS_VISITORS", visitorId, Request.UserHostAddress, $"Gate check-out");
+                _userDal.LogAudit(guardId, "Check-Out", "VMS_VISITORS", visitorId, HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown", $"Gate check-out");
                 return Json(new { success = true });
             }
             catch(Exception ex)

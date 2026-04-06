@@ -1,5 +1,7 @@
 using System;
-using System.Web.Mvc;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Http;
 using VMS.DAL;
 using VMS.Helpers;
 
@@ -12,50 +14,50 @@ namespace VMS.Controllers
         private UserDAL _userDal = new UserDAL();
 
         [HttpGet]
-        public ActionResult Dashboard()
+        public IActionResult Dashboard()
         {
             var stats = _visitorDal.GetDashboardCounts();
             return View(stats);
         }
 
         [HttpGet]
-        public ActionResult Visitors()
+        public IActionResult Visitors()
         {
             return View();
         }
 
         [HttpGet]
-        public ActionResult Users()
+        public IActionResult Users()
         {
             return View();
         }
 
         [HttpGet]
-        public ActionResult Gallery()
+        public IActionResult Gallery()
         {
             return View();
         }
 
         [HttpGet]
-        public ActionResult Reports()
+        public IActionResult Reports()
         {
             return View();
         }
 
         [HttpGet]
-        public ActionResult Masters()
+        public IActionResult Masters()
         {
             return View();
         }
 
         [HttpGet]
-        public ActionResult AuditLog()
+        public IActionResult AuditLog()
         {
             return View();
         }
 
         [HttpPost]
-        public ActionResult ExportReport(DateTime start, DateTime end, int deptId, string format)
+        public IActionResult ExportReport(DateTime start, DateTime end, int deptId, string format)
         {
             var data = _visitorDal.GetVisitorReport(start, end, deptId);
 
@@ -68,7 +70,7 @@ namespace VMS.Controllers
         }
 
         [HttpPost]
-        public JsonResult SetGuardPassword(string empNo, string password)
+        public IActionResult SetGuardPassword(string empNo, string password)
         {
             try
             {
