@@ -3,7 +3,15 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System;
 
+using Microsoft.Extensions.Configuration;
+
+public static class AppConfig
+{
+    public static IConfiguration Configuration { get; set; }
+}
+
 var builder = WebApplication.CreateBuilder(args);
+AppConfig.Configuration = builder.Configuration;
 builder.WebHost.UseUrls("http://0.0.0.0:8080");
 
 builder.Services.AddControllersWithViews();
