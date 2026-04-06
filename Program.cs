@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.Data.Sqlite;
 using System;
-
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.Extensions.Configuration;
-
-
 
 var builder = WebApplication.CreateBuilder(args);
 AppConfig.Configuration = builder.Configuration;
@@ -17,7 +17,6 @@ builder.Services.AddSession(options => {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
 });
 
-// Register SQLite Helper for the demo module
 builder.Services.AddSingleton<VMS.DAL.SqliteDBHelper>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -37,12 +36,121 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}/{id?}");
 
-// Ensure the Directory exists on startup (Crucial for Docker/Render SQLite volumes)
+// ── Auto-Initialize SQLite Database on every startup ──────────────────────────
 var dbDirectory = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Data");
 if (!System.IO.Directory.Exists(dbDirectory))
-{
     System.IO.Directory.CreateDirectory(dbDirectory);
+
+var connStr = builder.Configuration.GetConnectionString("DefaultConnection");
+using (var conn = new SqliteConnection(connStr))
+{
+    conn.Open();
+    var cmd = conn.CreateCommand();
+    cmd.CommandText = @"
+        CREATE TABLE IF NOT EXISTS seq_vms_visitors (id INTEGER PRIMARY KEY AUTOINCREMENT);
+
+        CREATE TABLE IF NOT EXISTS VMS_MASTER_DEPT (
+            DEPT_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            DEPT_NAME VARCHAR(100) NOT NULL,
+            IS_ACTIVE INT DEFAULT 1
+        );
+        CREATE TABLE IF NOT EXISTS VMS_MASTER_IDPROOF (
+            IDPROOF_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            PROOF_NAME VARCHAR(100) NOT NULL,
+            IS_ACTIVE INT DEFAULT 1
+        );
+        CREATE TABLE IF NOT EXISTS VMS_MASTER_HOST (
+            HOST_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            HOST_NAME VARCHAR(150) NOT NULL,
+            DEPT_ID INT REFERENCES VMS_MASTER_DEPT(DEPT_ID),
+            EMAIL VARCHAR(150),
+            MOBILE VARCHAR(15),
+            IS_ACTIVE INT DEFAULT 1
+        );
+        CREATE TABLE IF NOT EXISTS VMS_MASTER_GATE (
+            GATE_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            GATE_NUMBER VARCHAR(50) NOT NULL,
+            IS_ACTIVE INT DEFAULT 1
+        );
+        CREATE TABLE IF NOT EXISTS VMS_USERS (
+            USER_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            USERNAME VARCHAR(100) UNIQUE NOT NULL,
+            PASSWORD_HASH VARCHAR(256) NOT NULL,
+            FULL_NAME VARCHAR(150) NOT NULL,
+            ROLE VARCHAR(20) NOT NULL,
+            IS_ACTIVE INT DEFAULT 1,
+            CREATED_DATE DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS VMS_VISITORS (
+            VISITOR_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            VISIT_TOKEN VARCHAR(50) UNIQUE NOT NULL,
+            FULL_NAME VARCHAR(150) NOT NULL,
+            MOBILE VARCHAR(15) NOT NULL,
+            EMAIL VARCHAR(150),
+            COMPANY_NAME VARCHAR(150),
+            PURPOSE VARCHAR(500) NOT NULL,
+            HOST_ID INT REFERENCES VMS_MASTER_HOST(HOST_ID),
+            DEPT_ID INT REFERENCES VMS_MASTER_DEPT(DEPT_ID),
+            EXPECTED_DATETIME DATETIME NOT NULL,
+            IDPROOF_TYPE_ID INT REFERENCES VMS_MASTER_IDPROOF(IDPROOF_ID),
+            IDPROOF_NUMBER VARCHAR(50) NOT NULL,
+            STATUS VARCHAR(20) DEFAULT 'Pending',
+            REGISTERED_BY INT REFERENCES VMS_USERS(USER_ID),
+            CREATED_DATE DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS VMS_FILE_UPLOADS (
+            FILE_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            VISITOR_ID INT REFERENCES VMS_VISITORS(VISITOR_ID),
+            UPLOAD_TYPE VARCHAR(50),
+            ORIGINAL_NAME VARCHAR(255) NOT NULL,
+            STORED_NAME VARCHAR(255) NOT NULL,
+            FILE_PATH VARCHAR(1000) NOT NULL,
+            FILE_URL VARCHAR(1000) NOT NULL,
+            FILE_SIZE_BYTES INTEGER,
+            MIME_TYPE VARCHAR(50),
+            UPLOADED_DATE DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS VMS_CHECKIN_LOG (
+            LOG_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            VISITOR_ID INT REFERENCES VMS_VISITORS(VISITOR_ID),
+            GATE_ID INT REFERENCES VMS_MASTER_GATE(GATE_ID),
+            GUARD_ID INT REFERENCES VMS_USERS(USER_ID),
+            CHECKIN_TIME DATETIME NOT NULL,
+            CHECKOUT_TIME DATETIME,
+            DURATION_MINUTES INT
+        );
+        CREATE TABLE IF NOT EXISTS VMS_AUDIT_LOG (
+            AUDIT_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            USER_ID INT REFERENCES VMS_USERS(USER_ID),
+            ACTION_TYPE VARCHAR(100) NOT NULL,
+            ENTITY_NAME VARCHAR(100),
+            ENTITY_ID INT,
+            IP_ADDRESS VARCHAR(50),
+            ACTION_TIME DATETIME DEFAULT CURRENT_TIMESTAMP,
+            DETAILS TEXT
+        );
+    ";
+    cmd.ExecuteNonQuery();
+
+    // Seed admin if not already present
+    var checkCmd = conn.CreateCommand();
+    checkCmd.CommandText = "SELECT COUNT(*) FROM VMS_USERS WHERE ROLE = 'ADMIN'";
+    var count = (long)checkCmd.ExecuteScalar();
+    if (count == 0)
+    {
+        using var sha256 = SHA256.Create();
+        var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes("Surya@189489"));
+        var hash = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+
+        var seedCmd = conn.CreateCommand();
+        seedCmd.CommandText = @"
+            INSERT INTO VMS_USERS (USERNAME, PASSWORD_HASH, FULL_NAME, ROLE, IS_ACTIVE)
+            VALUES ('8142027323', $hash, 'System Administrator', 'ADMIN', 1)";
+        seedCmd.Parameters.AddWithValue("$hash", hash);
+        seedCmd.ExecuteNonQuery();
+    }
 }
+// ── End Database Init ──────────────────────────────────────────────────────────
 
 app.Run();
 
