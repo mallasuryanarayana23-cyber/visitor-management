@@ -1,5 +1,4 @@
 using System;
-using System.Configuration;
 using System.Data;
 using Npgsql;
 
@@ -21,6 +20,7 @@ namespace VMS.DAL
         {
             using (NpgsqlConnection conn = GetConnection())
             {
+                conn.Open();
                 using (NpgsqlCommand cmd = new NpgsqlCommand(cmdText, conn))
                 {
                     cmd.CommandType = cmdType;
