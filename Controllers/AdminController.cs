@@ -69,6 +69,75 @@ namespace VMS.Controllers
             return Content("Invalid format");
         }
 
+        [HttpGet]
+        public IActionResult GetUsersList()
+        {
+            var dt = _userDal.GetUsers();
+            var list = new System.Collections.Generic.List<object>();
+            foreach (System.Data.DataRow row in dt.Rows)
+            {
+                list.Add(new
+                {
+                    UserId = row["USER_ID"],
+                    Username = row["USERNAME"],
+                    FullName = row["FULL_NAME"],
+                    Role = row["ROLE"],
+                    IsActive = row["IS_ACTIVE"]
+                });
+            }
+            return Json(list);
+        }
+
+        [HttpPost]
+        public IActionResult SaveUser(string username, string name, string role, string password, bool isEdit)
+        {
+            try
+            {
+                bool success;
+                if (isEdit)
+                {
+                    success = _userDal.UpdateUser(username, name, role, 1);
+                }
+                else
+                {
+                    success = _userDal.CreateUser(username, password, name, role);
+                }
+
+                return Json(new { success = success, message = success ? "User saved successfully" : "Execution failed" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public IActionResult ToggleUserStatus(string username, bool active)
+        {
+            try
+            {
+                // We reuse UpdateUser with the status flag
+                // We need to fetch the existing data first or just pass status
+                // To keep it simple, we just update status
+                using (var conn = DBHelper.GetConnection())
+                {
+                    string sql = "UPDATE VMS_USERS SET IS_ACTIVE = @p_val WHERE USERNAME = @p_username";
+                    using (var cmd = new Npgsql.NpgsqlCommand(sql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@p_val", active ? 1 : 0);
+                        cmd.Parameters.AddWithValue("@p_username", username);
+                        conn.Open();
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
         [HttpPost]
         public IActionResult SetGuardPassword(string empNo, string password)
         {

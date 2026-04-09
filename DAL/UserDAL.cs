@@ -65,6 +65,60 @@ namespace VMS.DAL
             }
         }
 
+        public DataTable GetUsers()
+        {
+            using (NpgsqlConnection conn = DBHelper.GetConnection())
+            {
+                string query = "SELECT USER_ID, USERNAME, FULL_NAME, ROLE, IS_ACTIVE, CREATED_DATE FROM VMS_USERS ORDER BY CREATED_DATE DESC;";
+                using (NpgsqlCommand cmd = new NpgsqlCommand(query, conn))
+                {
+                    using (NpgsqlDataAdapter da = new NpgsqlDataAdapter(cmd))
+                    {
+                        DataTable dt = new DataTable();
+                        da.Fill(dt);
+                        return dt;
+                    }
+                }
+            }
+        }
+
+        public bool CreateUser(string username, string password, string fullName, string role)
+        {
+            string passwordHash = ComputeSHA256Hash(password);
+
+            using (NpgsqlConnection conn = DBHelper.GetConnection())
+            {
+                string query = @"INSERT INTO VMS_USERS (USER_ID, USERNAME, PASSWORD_HASH, FULL_NAME, ROLE, IS_ACTIVE) 
+                               VALUES (nextval('SEQ_VMS_USERS'), @p_username, @p_pwd, @p_name, @p_role, 1);";
+                using (NpgsqlCommand cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@p_username", username);
+                    cmd.Parameters.AddWithValue("@p_pwd", passwordHash);
+                    cmd.Parameters.AddWithValue("@p_name", fullName);
+                    cmd.Parameters.AddWithValue("@p_role", role.ToUpper());
+                    conn.Open();
+                    return cmd.ExecuteNonQuery() > 0;
+                }
+            }
+        }
+
+        public bool UpdateUser(string username, string fullName, string role, int isActive)
+        {
+            using (NpgsqlConnection conn = DBHelper.GetConnection())
+            {
+                string query = @"UPDATE VMS_USERS SET FULL_NAME = @p_name, ROLE = @p_role, IS_ACTIVE = @p_status WHERE USERNAME = @p_username;";
+                using (NpgsqlCommand cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@p_username", username);
+                    cmd.Parameters.AddWithValue("@p_name", fullName);
+                    cmd.Parameters.AddWithValue("@p_role", role.ToUpper());
+                    cmd.Parameters.AddWithValue("@p_status", isActive);
+                    conn.Open();
+                    return cmd.ExecuteNonQuery() > 0;
+                }
+            }
+        }
+
         private string ComputeSHA256Hash(string rawData)
         {
             using (SHA256 sha256Hash = SHA256.Create())

@@ -25,55 +25,7 @@
                     </tr>
                 </thead>
                 <tbody id="usersTableBody">
-                    <tr data-id="9703436421">
-                        <td>9703436421</td>
-                        <td>Admin Root</td>
-                        <td>admin@vms.com</td>
-                        <td><span class="badge bg-danger">Administrator</span></td>
-                        <td><span class="text-success fw-bold">● Active</span></td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-dark edit-user-btn"
-                                data-id="9703436421" data-name="Admin Root" data-email="admin@vms.com" data-role="Admin">Edit</button>
-                            <button class="btn btn-sm btn-outline-secondary toggle-status-btn" data-status="active">Deactivate</button>
-                        </td>
-                    </tr>
-                    <tr data-id="GUARD001">
-                        <td>GUARD001</td>
-                        <td>Main Gate Guard</td>
-                        <td>guard1@vms.com</td>
-                        <td><span class="badge bg-success">Security Guard</span></td>
-                        <td><span class="text-success fw-bold">● Active</span></td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-dark edit-user-btn"
-                                data-id="GUARD001" data-name="Main Gate Guard" data-email="guard1@vms.com" data-role="Guard">Edit</button>
-                            <button class="btn btn-sm btn-outline-warning reset-btn">Reset PW</button>
-                            <button class="btn btn-sm btn-outline-secondary toggle-status-btn" data-status="active">Deactivate</button>
-                        </td>
-                    </tr>
-                    <tr data-id="EMP001">
-                        <td>EMP001</td>
-                        <td>Dr. Smith</td>
-                        <td>smith@vms.com</td>
-                        <td><span class="badge bg-primary">Host Employee</span></td>
-                        <td><span class="text-success fw-bold">● Active</span></td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-dark edit-user-btn"
-                                data-id="EMP001" data-name="Dr. Smith" data-email="smith@vms.com" data-role="User">Edit</button>
-                            <button class="btn btn-sm btn-outline-secondary toggle-status-btn" data-status="active">Deactivate</button>
-                        </td>
-                    </tr>
-                    <tr data-id="EMP002">
-                        <td>EMP002</td>
-                        <td>Jane Doe</td>
-                        <td>jane@vms.com</td>
-                        <td><span class="badge bg-primary">Host Employee</span></td>
-                        <td><span class="text-danger fw-bold">● Inactive</span></td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-dark edit-user-btn"
-                                data-id="EMP002" data-name="Jane Doe" data-email="jane@vms.com" data-role="User">Edit</button>
-                            <button class="btn btn-sm btn-outline-success toggle-status-btn" data-status="inactive">Activate</button>
-                        </td>
-                    </tr>
+                    <!-- Loaded dynamically via AJAX -->
                 </tbody>
             </table>
         </div>
@@ -91,14 +43,15 @@
             <div class="modal-body">
                 <form id="userForm" novalidate>
                     <input type="hidden" id="editUserId" />
+                    <input type="hidden" id="isEditMode" value="false" />
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Employee ID / Guard No. <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="userEmpId" placeholder="e.g. GUARD002 or EMP500" required />
+                        <input type="text" class="form-control" id="userEmpId" name="username" placeholder="e.g. GUARD002 or EMP500" required />
                         <div class="invalid-feedback">Employee ID is required.</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="userName" placeholder="e.g. John Smith" required />
+                        <input type="text" class="form-control" id="userName" name="name" placeholder="e.g. John Smith" required />
                         <div class="invalid-feedback">Name is required.</div>
                     </div>
                     <div class="mb-3">
@@ -108,7 +61,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
-                        <select class="form-select" id="userRole" required>
+                        <select class="form-select" id="userRole" name="role" required>
                             <option value="">-- Select Role --</option>
                             <option value="Admin">Administrator</option>
                             <option value="Guard">Security Guard</option>
@@ -118,19 +71,8 @@
                     </div>
                     <div id="passwordSection" class="mb-3">
                         <label class="form-label fw-semibold">Initial Password <span class="text-danger">*</span></label>
-                        <input type="password" class="form-control" id="userPassword" placeholder="Minimum 8 characters" />
+                        <input type="password" class="form-control" id="userPassword" name="password" placeholder="Minimum 8 characters" />
                         <div class="invalid-feedback">Password is required (min 8 chars).</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Department</label>
-                        <select class="form-select" id="userDept">
-                            <option value="">-- Select Department --</option>
-                            <option>Engineering</option>
-                            <option>Human Resources</option>
-                            <option>Finance</option>
-                            <option>Executive</option>
-                            <option>IT Support</option>
-                        </select>
                     </div>
                 </form>
             </div>
@@ -194,15 +136,39 @@
 
 @section Scripts {
     <script>
-        var userCounter = 5;
         var roleBadge = {
-            'Admin': '<span class="badge bg-danger">Administrator</span>',
-            'Guard': '<span class="badge bg-success">Security Guard</span>',
-            'User':  '<span class="badge bg-primary">Host Employee</span>'
+            'ADMIN': '<span class="badge bg-danger">Administrator</span>',
+            'GUARD': '<span class="badge bg-success">Security Guard</span>',
+            'USER':  '<span class="badge bg-primary">Host Employee</span>'
         };
 
         $(document).ready(function () {
-            $('#usersTable').DataTable({ "pageLength": 10 });
+            loadUsers();
+
+            // ---- Load Users via AJAX ----
+            function loadUsers() {
+                $.get('/Admin/GetUsersList', function (data) {
+                    var html = '';
+                    data.forEach(function (u) {
+                        html += '<tr data-id="' + u.username + '">' +
+                            '<td>' + u.username + '</td>' +
+                            '<td>' + u.fullName + '</td>' +
+                            '<td>' + (u.email || "-") + '</td>' +
+                            '<td>' + (roleBadge[u.role] || u.role) + '</td>' +
+                            '<td>' + (u.isActive == 1 ? '<span class="text-success fw-bold">● Active</span>' : '<span class="text-danger fw-bold">● Inactive</span>') + '</td>' +
+                            '<td>' +
+                                '<button class="btn btn-sm btn-outline-dark edit-user-btn" data-id="' + u.username + '" data-name="' + u.fullName + '" data-role="' + u.role + '">Edit</button> ' +
+                                '<button class="btn btn-sm ' + (u.isActive == 1 ? 'btn-outline-secondary' : 'btn-outline-success') + ' toggle-status-btn" data-status="' + (u.isActive == 1 ? 'active' : 'inactive') + '">' + (u.isActive == 1 ? 'Deactivate' : 'Activate') + '</button>' +
+                            '</td>' +
+                            '</tr>';
+                    });
+                    $('#usersTableBody').html(html);
+                    if ($.fn.DataTable.isDataTable('#usersTable')) {
+                        $('#usersTable').DataTable().destroy();
+                    }
+                    $('#usersTable').DataTable({ "pageLength": 10 });
+                });
+            }
 
             // ---- Open ADD modal ----
             $('#addUserBtn').click(function () {
@@ -210,7 +176,7 @@
                 $('#userForm')[0].reset();
                 $('#userEmpId').prop('readonly', false);
                 $('#userForm .is-invalid').removeClass('is-invalid');
-                $('#editUserId').val('');
+                $('#isEditMode').val('false');
                 $('#passwordSection').show();
                 new bootstrap.Modal(document.getElementById('userModal')).show();
             });
@@ -218,142 +184,87 @@
             // ---- Open EDIT modal ----
             $(document).on('click', '.edit-user-btn', function () {
                 $('#userModalTitle').text('Edit User');
-                $('#editUserId').val($(this).data('id'));
+                $('#isEditMode').val('true');
                 $('#userEmpId').val($(this).data('id')).prop('readonly', true);
-                $('#userName').val($(this).data('name'));
-                $('#userEmail').val($(this).data('email'));
-                $('#userRole').val($(this).data('role'));
-                $('#userPassword').val('');
-                $('#passwordSection').hide(); // don't force password on edit
+                var fullName = $(this).data('name');
+                var role = $(this).data('role');
+                
+                $('#userName').val(fullName);
+                $('#userRole').val(role.charAt(0).toUpperCase() + role.slice(1).toLowerCase());
+                
+                $('#passwordSection').hide();
                 $('#userForm .is-invalid').removeClass('is-invalid');
                 new bootstrap.Modal(document.getElementById('userModal')).show();
             });
 
             // ---- Save User (Add or Edit) ----
             $('#saveUserBtn').click(function () {
-                var valid = true;
-
                 var empId = $('#userEmpId').val().trim();
                 var name  = $('#userName').val().trim();
-                var email = $('#userEmail').val().trim();
                 var role  = $('#userRole').val();
                 var pass  = $('#userPassword').val().trim();
-                var isEdit = !!$('#editUserId').val();
+                var isEdit = $('#isEditMode').val() === 'true';
 
-                if (!empId) { $('#userEmpId').addClass('is-invalid'); valid = false; } else { $('#userEmpId').removeClass('is-invalid'); }
-                if (!name)  { $('#userName').addClass('is-invalid');  valid = false; } else { $('#userName').removeClass('is-invalid'); }
-                if (!email || !/\S+@@\S+\.\S+/.test(email)) { $('#userEmail').addClass('is-invalid'); valid = false; } else { $('#userEmail').removeClass('is-invalid'); }
-                if (!role)  { $('#userRole').addClass('is-invalid');  valid = false; } else { $('#userRole').removeClass('is-invalid'); }
-                if (!isEdit && (!pass || pass.length < 8)) { $('#userPassword').addClass('is-invalid'); valid = false; } else { $('#userPassword').removeClass('is-invalid'); }
-
-                if (!valid) return;
-
-                $(this).html('<span class="spinner-border spinner-border-sm"></span> Saving...').prop('disabled', true);
-                var btn = $(this);
-
-                setTimeout(function () {
-                    btn.html('💾 Save User').prop('disabled', false);
-                    bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
-
-                    if (isEdit) {
-                        // Update existing row
-                        var row = $('[data-id="' + $('#editUserId').val() + '"]');
-                        row.find('td').eq(1).text(name);
-                        row.find('td').eq(2).text(email);
-                        row.find('td').eq(3).html(roleBadge[role]);
-                        row.find('.edit-user-btn').data('name', name).data('email', email).data('role', role);
-                        toastr.success('User updated successfully!');
-                    } else {
-                        // Add new row to table
-                        var newRow = '<tr data-id="' + empId + '">' +
-                            '<td>' + empId + '</td>' +
-                            '<td>' + name + '</td>' +
-                            '<td>' + email + '</td>' +
-                            '<td>' + roleBadge[role] + '</td>' +
-                            '<td><span class="text-success fw-bold">● Active</span></td>' +
-                            '<td>' +
-                              '<button class="btn btn-sm btn-outline-dark edit-user-btn" data-id="' + empId + '" data-name="' + name + '" data-email="' + email + '" data-role="' + role + '">Edit</button> ' +
-                              '<button class="btn btn-sm btn-outline-secondary toggle-status-btn" data-status="active">Deactivate</button>' +
-                            '</td>' +
-                            '</tr>';
-                        $('#usersTableBody').prepend(newRow);
-                        toastr.success('User "' + empId + '" provisioned! They can now log in.');
-                    }
-                }, 900);
-            });
-
-            // ---- Toggle Active/Inactive ----
-            $(document).on('click', '.toggle-status-btn', function () {
-                var btn = $(this);
-                var row = btn.closest('tr');
-                var currentStatus = btn.data('status');
-                var name = row.find('td').eq(1).text();
-
-                if (currentStatus === 'active') {
-                    Swal.fire({
-                        title: 'Deactivate User?',
-                        text: name + ' will no longer be able to log in.',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#ffc107',
-                        confirmButtonText: 'Yes, Deactivate'
-                    }).then(function (result) {
-                        if (result.isConfirmed) {
-                            row.find('td').eq(4).html('<span class="text-danger fw-bold">● Inactive</span>');
-                            btn.text('Activate').removeClass('btn-outline-secondary').addClass('btn-outline-success').data('status', 'inactive');
-                            toastr.warning(name + ' has been deactivated.');
-                        }
-                    });
-                } else {
-                    row.find('td').eq(4).html('<span class="text-success fw-bold">● Active</span>');
-                    btn.text('Deactivate').removeClass('btn-outline-success').addClass('btn-outline-secondary').data('status', 'active');
-                    toastr.success(name + ' has been activated.');
-                }
-            });
-
-            // ---- Reset Password ----
-            $(document).on('click', '.reset-btn', function () {
-                var name = $(this).closest('tr').find('td').eq(1).text();
-                $('#resetUserName').text(name);
-                $('#newPassword').val('');
-                new bootstrap.Modal(document.getElementById('resetModal')).show();
-            });
-
-            $('#confirmResetBtn').click(function () {
-                var pw = $('#newPassword').val().trim();
-                if (!pw || pw.length < 8) {
-                    toastr.error('Password must be at least 8 characters.');
+                if (!empId || !name || !role || (!isEdit && pass.length < 8)) {
+                    toastr.error('Please fill all required fields correctly.');
                     return;
                 }
-                bootstrap.Modal.getInstance(document.getElementById('resetModal')).hide();
-                toastr.success('Password reset successfully for ' + $('#resetUserName').text() + '!');
+
+                $(this).html('<span class="spinner-border spinner-border-sm"></span> Saving...').prop('disabled', true);
+                
+                $.post('/Admin/SaveUser', {
+                    username: empId,
+                    name: name,
+                    role: role,
+                    password: pass,
+                    isEdit: isEdit
+                }, function(res) {
+                    $('#saveUserBtn').html('💾 Save User').prop('disabled', false);
+                    if (res.success) {
+                        bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
+                        toastr.success(res.message);
+                        loadUsers();
+                    } else {
+                        toastr.error(res.message);
+                    }
+                });
             });
 
-            // ---- Guard Password Setup ----
+            // ---- Toggle Status ----
+            $(document).on('click', '.toggle-status-btn', function () {
+                var btn = $(this);
+                var username = btn.closest('tr').data('id');
+                var isCurrentlyActive = btn.data('status') === 'active';
+
+                $.post('/Admin/ToggleUserStatus', { username: username, active: !isCurrentlyActive }, function(res) {
+                    if (res.success) {
+                        toastr.success('Status updated!');
+                        loadUsers();
+                    } else {
+                        toastr.error(res.message);
+                    }
+                });
+            });
+
+            // ---- Guard Password Setup (Existing) ----
             $('#guardPasswordBtn').click(function () {
                 $('#guardPasswordForm')[0].reset();
-                $('#guardPasswordForm .is-invalid').removeClass('is-invalid');
                 new bootstrap.Modal(document.getElementById('guardPasswordModal')).show();
             });
 
             $('#saveGuardPasswordBtn').click(function () {
-                var valid = true;
                 var empNo = $('#guardEmpNo').val().trim();
                 var pw = $('#guardNewPassword').val().trim();
+                if (!empNo || pw.length < 8) return;
 
-                if (!empNo) { $('#guardEmpNo').addClass('is-invalid'); valid = false; } else { $('#guardEmpNo').removeClass('is-invalid'); }
-                if (!pw || pw.length < 8) { $('#guardNewPassword').addClass('is-invalid'); valid = false; } else { $('#guardNewPassword').removeClass('is-invalid'); }
-
-                if (!valid) return;
-
-                $(this).html('<span class="spinner-border spinner-border-sm"></span> Saving...').prop('disabled', true);
-                var btn = $(this);
-
-                setTimeout(function () {
-                    btn.html('Set Password').prop('disabled', false);
-                    bootstrap.Modal.getInstance(document.getElementById('guardPasswordModal')).hide();
-                    toastr.success('Password created for Guard Employee No: ' + empNo);
-                }, 900);
+                $.post('/Admin/SetGuardPassword', { empNo: empNo, password: pw }, function(res) {
+                    if (res.success) {
+                        bootstrap.Modal.getInstance(document.getElementById('guardPasswordModal')).hide();
+                        toastr.success(res.message);
+                    } else {
+                        toastr.error(res.message);
+                    }
+                });
             });
         });
     </script>
